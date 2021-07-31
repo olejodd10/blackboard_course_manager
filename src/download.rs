@@ -16,7 +16,7 @@ pub fn download_file(file_url: &str, out_path: &Path, access_token: Option<&str>
 
     if let Some(access_token) = access_token {
         let mut list = List::new();
-        let autorization_header = format!("Authorization: Basic {}", access_token);
+        let autorization_header = format!("Authorization: Bearer {}", access_token);
         list.append(&autorization_header).unwrap();
         easy.http_headers(list).unwrap();
     }

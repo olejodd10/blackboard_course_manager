@@ -1,6 +1,6 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use super::*;
+use super::course_manager::course::{self, Course};
 
 #[test]
 fn wiki_course_test() {
@@ -16,10 +16,13 @@ fn wiki_course_test() {
 }
 
 #[test]
-fn fetch_bb_file_test() {
-    // auth::get_authorization_code();
+fn bb_file_fetch_parse_test() {
+    let blackboard_course = course::blackboard_course::BBCourse {
+        course_code: "TDT4102".to_string(),
+        semester: "V21".to_string(),
+        output_dir: PathBuf::from("./"),
+        blackboard_course_id: "_22729_1".to_string(),
+    };
 
-    // let file_url = "https://ntnu.blackboard.com/learn/api/v1/courses/_24006_1/announcements";
-    // let out_path = Path::new("./test.json");
-    // download_file(file_url, &out_path).unwrap();
+    blackboard_course.fetch_file_attachments().unwrap();
 }
