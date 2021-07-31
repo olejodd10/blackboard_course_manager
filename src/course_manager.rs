@@ -1,1 +1,1 @@
-mod course;
+pub mod course;

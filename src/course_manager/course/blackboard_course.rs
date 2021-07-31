@@ -57,10 +57,11 @@ impl super::Course for BlackBoardCourse {
             appointment.attachment_id);
             
         if appointment.mimetype == "attribute/zip" {
-            download_and_unzip(&file_url, &self.output_dir)
+            download_and_unzip(&file_url, &self.output_dir, None)?;
+            Ok(())
         } else {
             let output_file_name = format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number);
-            download_file(&file_url, &self.output_dir.join(output_file_name))?;
+            download_file(&file_url, &self.output_dir.join(output_file_name), None)?;
             Ok(())
         }
     }

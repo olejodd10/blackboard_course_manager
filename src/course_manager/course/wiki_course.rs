@@ -36,7 +36,8 @@ impl super::Course for WikiCourse {
         let appointment_path = &format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number);
         match download_file(
             &self.appointment_url_format_string.appointment_url(appointment_number), 
-            &self.output_dir.join(Path::new(appointment_path))
+            &self.output_dir.join(Path::new(appointment_path)),
+            None
         ) {
             Ok(download_size) if download_size < VALID_APPOINTMENT_SIZE_LIMIT => {
                 std::fs::remove_file(appointment_path)?;
