@@ -8,6 +8,8 @@ use blackboard_definitions::{BBAttachment, BBContent};
 #[derive(Debug)]
 pub struct BBCourse<'a> {
     session: &'a blackboard_session::BBSession,
+    pub course_files: Vec<BBContent>,
+    pub course_documents: Vec<BBContent>,
     pub course_code: String,
     pub semester: String,
     pub out_dir: PathBuf,
@@ -28,7 +30,7 @@ impl<'a> BBCourse<'a> {
     //     unimplemented!();
     // }
 
-    fn fetch_course_files(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
+    fn fetch_course_files(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let session = self.session;
 
         let json_filename = format!("{}_files.json", self.id);
@@ -39,18 +41,25 @@ impl<'a> BBCourse<'a> {
         let json_string = std::fs::read_to_string(&json_path)?;
         let parsed_json = json::parse(&json_string)?;
 
-        let course_files = parsed_json["results"].members().map(|member| {
+        self.course_files = parsed_json["results"].members().map(|member| {
             BBContent {
-                course: &self,
+                attachments: Vec::new(),
                 id: member["id"].to_string(),
                 title: member["title"].to_string(),
             }
         }).collect();
 
-        Ok(course_files)
+        Ok(())
     }
 
-    fn fetch_course_documents(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
+    fn fetch_course_file_attachments(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        for file in &mut self.course_files {
+            file.fetch_attachments(&self)?
+        }
+        Ok(())
+    }
+
+    fn fetch_course_documents(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let session = self.session;
 
         let json_filename = format!("{}_documents.json", self.id);
@@ -61,33 +70,30 @@ impl<'a> BBCourse<'a> {
         let json_string = std::fs::read_to_string(&json_path)?;
         let parsed_json = json::parse(&json_string)?;
 
-        let course_documents = parsed_json["results"].members().map(|member| {
+        self.course_documents = parsed_json["results"].members().map(|member| {
             BBContent {
-                course: &self,
+                attachments: Vec::new(),
                 id: member["id"].to_string(),
                 title: member["title"].to_string(),
             }
         }).collect();
 
-        Ok(course_documents)
+        Ok(())
     }
 
-    // fn fetch_documents(&self) -> Vec<BBDocument> {
-    //     let content_handler_filter = "resource/x-bb-file";
-    //     let fields = "id,title,contentHandler"; //Trenger kanskje ikke contentHandler utenom filtreringen
-        
-    //     unimplemented!();
-    // }
+    fn fetch_course_document_attachments(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        for document in &mut self.course_documents {
+            document.fetch_attachments(&self)?
+        }
+        Ok(())
+    }
 
-    pub fn fetch_course_appointments(&self) -> Result<Vec<BBAttachment>, Box<dyn std::error::Error>> {
-        let mut course_contents_of_interest = Vec::new();
-        course_contents_of_interest.append(&mut self.fetch_course_files()?);
-        course_contents_of_interest.append(&mut self.fetch_course_documents()?);
-        
+    pub fn get_course_appointments(&self) -> Result<Vec<&BBAttachment>, Box<dyn std::error::Error>> {
+
         let mut appointments = Vec::new();
-        for content in course_contents_of_interest {
-            for attachment in content.fetch_attachments()? {
-                if BBCourse::attachment_is_appointment(&attachment) {
+        for content in self.course_files.iter().chain(self.course_documents.iter()) {
+            for attachment in &content.attachments {
+                if BBCourse::attachment_is_appointment(attachment) {
                     appointments.push(attachment);
                 }
             }
@@ -98,27 +104,30 @@ impl<'a> BBCourse<'a> {
 }
 
 // impl super::Course for BBCourse {
-//     fn available_appointments(&self) -> Vec<usize> {
-//         unimplemented!();
+//     fn get_available_appointments(&self) -> Vec<usize> {
+//         let appointments = self.get_course_appointments();
+//         (1..20).filter(|appointment_number| {
+//             appointments.iter().any(|appointment| BBCourse::appointment_is_nth_appointment(*appointment, appointment_number))
+//         }).collect()
 //     }
 
 //     fn download_appointment(&self, appointment_number: usize) -> Result<(), Box<dyn std::error::Error>> {
-//         let appointment = self.fetch_appointments()
+//         let appointment = self.get_course_appointments()
 //             .into_iter()
 //             .find(|appointment| BBCourse::appointment_is_nth_appointment(appointment, appointment_number))
 //             .unwrap();
         
 //         let file_url = format!("https://ntnu.blackboard.com/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
-//             self.course_id,
+//             self.id,
 //             appointment.content_id,
 //             appointment.attachment_id);
             
 //         if appointment.mimetype == "attribute/zip" {
-//             download_and_unzip(&file_url, &self.out_dir, None)?;
+//             self.session.download_file(&file_url, &self.out_dir)?;
 //             Ok(())
 //         } else {
 //             let output_file_name = format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number);
-//             download_file(&file_url, &self.out_dir.join(output_file_name), None)?;
+//             self.session.download_file(&file_url, &self.out_dir.join(output_file_name))?;
 //             Ok(())
 //         }
 //     }
