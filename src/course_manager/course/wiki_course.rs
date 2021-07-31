@@ -26,8 +26,16 @@ impl WikiCourse {
     }
 }
 
-impl super::Course for WikiCourse {    
-    fn available_appointments(&self) -> Vec<usize> {
+impl super::Course for WikiCourse {
+    fn get_course_code(&self) -> &str {
+        &self.course_code
+    }
+
+    fn get_semester(&self) -> &str {
+        &self.semester
+    }
+
+    fn get_available_appointments(&self) -> Vec<usize> {
         (LOWER_SEARCHED_APPOINTMENT_LIMIT..=UPPER_SEARCHED_APPOINTMENT_LIMIT).take_while(|appointment_number| self.download_appointment(*appointment_number).is_ok()).collect()
     }
     

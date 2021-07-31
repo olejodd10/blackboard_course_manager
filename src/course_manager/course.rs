@@ -2,7 +2,13 @@ pub mod wiki_course;
 pub mod blackboard_course;
 
 pub trait Course {
-    fn available_appointments(&self) -> Vec<usize>;
+    //fn get_institution(&self) -> &str;
+
+    fn get_course_code(&self) -> &str;
+
+    fn get_semester(&self) -> &str;
+
+    fn get_available_appointments(&self) -> Vec<usize>;
 
     //overwrite-argument!
     fn download_appointment(&self, appointment_number: usize) -> Result<(), Box<dyn std::error::Error>>;
@@ -20,7 +26,7 @@ pub trait Course {
     }
 
     fn download_available_appointments(&self) -> Result<(), Box<dyn std::error::Error>> {
-        self.download_appointments(&self.available_appointments())
+        self.download_appointments(&self.get_available_appointments())
     }
 
     // fn submit(...);

@@ -3,7 +3,7 @@ use std::io::Write;
 use curl::easy::{Easy, List};
 
 
-pub fn download_file(file_url: &str, out_path: &Path, access_token: Option<&str>) -> Result<f64, Box<dyn std::error::Error>> {
+pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>) -> Result<f64, Box<dyn std::error::Error>> {
     
     let mut out_file = std::fs::File::create(&out_path).expect("Error creating out_file");
 
@@ -14,10 +14,12 @@ pub fn download_file(file_url: &str, out_path: &Path, access_token: Option<&str>
         Ok(data.len())
     })?;
 
-    if let Some(access_token) = access_token {
+    if let Some(headers) = headers {
         let mut list = List::new();
-        let autorization_header = format!("Authorization: Bearer {}", access_token);
-        list.append(&autorization_header).unwrap();
+        for header in headers {
+            eprintln!("Adding header: {}", header);
+            list.append(header).unwrap();
+        }
         easy.http_headers(list).unwrap();
     }
 
@@ -29,7 +31,7 @@ pub fn download_file(file_url: &str, out_path: &Path, access_token: Option<&str>
 }
 
 
-pub fn download_and_unzip(file_url: &str, out_path: &Path, access_token: Option<&str>) -> Result<f64, Box<dyn std::error::Error>> {
+pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&str]>) -> Result<f64, Box<dyn std::error::Error>> {
     
     let out_path = PathBuf::from(out_path); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
 
@@ -40,10 +42,12 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, access_token: Option<
         Ok(data.len())
     })?;
 
-    if let Some(access_token) = access_token {
+    if let Some(headers) = headers {
         let mut list = List::new();
-        let autorization_header = format!("Authorization: Bearer {}", access_token);
-        list.append(&autorization_header).unwrap();
+        for header in headers {
+            eprintln!("Adding header: {}", header);
+            list.append(header).unwrap();
+        }
         easy.http_headers(list).unwrap();
     }
 
