@@ -2,9 +2,8 @@ use std::path::{Path, PathBuf};
 use std::io::Write;
 use curl::easy::Easy;
 
-const VALID_FILE_SIZE_LIMIT: f64 = 10000.0;
 
-pub fn fetch_file(file_url: &str, out_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn download_file(file_url: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
     
     let mut out_file = std::fs::File::create(&out_path).expect("Error creating out_file");
 
@@ -19,16 +18,11 @@ pub fn fetch_file(file_url: &str, out_path: &Path) -> Result<(), Box<dyn std::er
     // easy.http_headers(list).unwrap();
 
     easy.perform()?;
-    if easy.download_size()? < VALID_FILE_SIZE_LIMIT {
-        std::fs::remove_file(out_path)?;
-        Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "File too small to be valid")))
-    } else { 
-        Ok(()) 
-    }
+    Ok(easy.download_size()?)
 }
 
 
-pub fn fetch_and_unzip(file_url: &str, out_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn download_and_unzip(file_url: &str, out_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     
     let out_path = PathBuf::from(out_path); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
 
