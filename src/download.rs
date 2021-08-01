@@ -37,15 +37,16 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
 
 
 pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
-    
+
     if !overwrite && out_path.exists() { return Ok(0.0); }
 
-    let out_path = PathBuf::from(out_path); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
+    let out_dir = out_path.with_extension(""); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
+    std::fs::create_dir_all(out_dir.clone())?; // Må klone for å unngå feilmelding
 
     let mut easy = Easy::new();
     easy.url(file_url)?;
     easy.write_function(move |data| { 
-        zip_extract::extract(std::io::Cursor::new(data), &out_path, true).expect("Unzipping error");
+        zip_extract::extract(std::io::Cursor::new(data), &out_dir, true).expect("Unzipping error");
         Ok(data.len())
     })?;
 
@@ -63,7 +64,7 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
 
     easy.perform()?;
 
-    // eprintln!("Response code: {}", easy.response_code().unwrap());
+    std::fs::remove_file(&out_path)?;
 
     Ok(easy.download_size()?)
 }

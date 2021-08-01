@@ -83,6 +83,10 @@ impl BBAttachment {
             }
         }).collect())
     }
+
+    pub fn is_zip(&self) -> bool {
+        self.mimetype == "application/zip"
+    }
 }
 
 

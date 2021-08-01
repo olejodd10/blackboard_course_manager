@@ -16,6 +16,10 @@ impl BBSession {
         download::download_file(&url, &out_path, Some(&[&self.cookie_header]), overwrite)
     }
 
+    pub fn download_and_unzip(&self, url: &str, out_path: &Path, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+        download::download_and_unzip(&url, &out_path, Some(&[&self.cookie_header]), overwrite)
+    }
+
     fn download_course_contents_json(&self, course_id: &str, content_handler: Option<&str>, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents",
             self.domain,
@@ -72,7 +76,7 @@ impl BBSession {
         self.download_file(&url, &out_path, true)
     }
 
-    pub fn download_content_attachment(&self, course_id: &str, content_id: &str, attachment_id: &str, out_path: &Path, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+    pub fn download_content_attachment(&self, course_id: &str, content_id: &str, attachment_id: &str, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
 
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
             self.domain,
@@ -80,7 +84,11 @@ impl BBSession {
             content_id,
             attachment_id);
         
-        self.download_file(&url, &out_path, overwrite)
+        if unzip {
+            self.download_and_unzip(&url, &out_path, overwrite)
+        } else {
+            self.download_file(&url, &out_path, overwrite)
+        }
     }
     
     // pub fn download_course_assessment_questions_json(...)

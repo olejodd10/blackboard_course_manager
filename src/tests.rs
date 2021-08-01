@@ -41,6 +41,7 @@ fn regtek_appointments_test() {
             }
         )), 
         None,
+        true,
         false
     )
     .unwrap();
@@ -70,9 +71,11 @@ fn cpp_appointments_test() {
             }
         )), 
         None,
+        true,
         false
     )
-    .unwrap();}
+    .unwrap();
+}
 
 #[test]
 fn bb_course_announcements_test() {
@@ -108,4 +111,39 @@ fn test_view_regtek_course_content() {
     );
 
     regtek.view_course_content().unwrap();
+}
+
+
+#[test]
+fn tilpdat_test() {
+    let session = course::blackboard_course::blackboard_session::BBSession {
+        domain: "ntnu.blackboard.com".to_string(),
+        cookie_header: COOKIE_HEADER.to_string(),
+    };
+
+    let tilpdat = course::blackboard_course::BBCourse::new(
+        &session,
+        "TTK4235".to_string(),
+        "V21".to_string(),
+        PathBuf::from("./output/ttk4235files/"),
+        "_24561_1".to_string()
+    );
+
+    // tilpdat.view_course_announcements(5, 0).unwrap();
+
+    tilpdat.view_course_content().unwrap();
+
+    tilpdat.download_course_content_attachments(
+        Some(&(
+            |content| {
+            course::blackboard_course::predicate_utils::title_substring(
+                content, 
+                "Øving")
+            }
+        )), 
+        None,
+        true,
+        true
+    )
+    .unwrap();
 }

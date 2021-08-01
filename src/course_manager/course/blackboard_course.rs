@@ -99,44 +99,51 @@ impl<'a> BBCourse<'a> {
         BBAttachment::vec_from_json_results(&attachments_json_path)
     }
 
+    // Download attachments satisfying predicate, for specified content instance
     pub fn download_content_attachments(
         &self, 
         content: &BBContent, 
         attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        unzip: bool,
         overwrite: bool
     ) -> Result<(), Box<dyn std::error::Error>> {
         let content_attachments = self.get_content_attachments(content)?;
         if let Some(attachment_predicate) = attachment_predicate {
             for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
-                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename), overwrite)?;
+                let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
+                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename), unzip, overwrite)?;
             }
         } else {
             for attachment in content_attachments {
-                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename), overwrite)?;
+                let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
+                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename), unzip, overwrite)?;
             }
         }
         Ok(())
     }
 
+    // Download all attachments in course meeting predicates
     pub fn download_course_content_attachments(
         &self, 
         content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>, 
         attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        unzip: bool,
         overwrite: bool
     ) -> Result<(), Box<dyn std::error::Error>> {
         let course_content = self.get_course_content()?;
         if let Some(content_predicate) = content_predicate {
             for content in course_content.into_iter().filter(|content| content_predicate(content)) {
-                self.download_content_attachments(&content, attachment_predicate, overwrite)?;
+                self.download_content_attachments(&content, attachment_predicate, unzip, overwrite)?;
             }
         } else {
             for content in course_content {
-                self.download_content_attachments(&content, attachment_predicate, overwrite)?;
+                self.download_content_attachments(&content, attachment_predicate, unzip, overwrite)?;
             }
         }
         Ok(())
     }
 
+    // Download all content in course, reflecting actual folder structure
     // pub fn download_course_content_tree(
 
     // ) -> Result<(), Box<dyn std::error::Error>> {
