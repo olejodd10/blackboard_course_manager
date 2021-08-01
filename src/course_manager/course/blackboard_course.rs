@@ -3,21 +3,22 @@ use json;
 
 pub mod blackboard_session;
 pub mod blackboard_definitions;
+pub mod appointment_evaluators;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement};
 
-#[derive(Debug)]
 pub struct BBCourse<'a> {
     pub session: &'a blackboard_session::BBSession,
     pub course_code: String,
     pub semester: String,
     pub out_dir: PathBuf,
     pub id: String,
+    pub appointment_evaluator: &'static dyn Fn(&BBAttachment) -> bool,
 }
 
 
 impl<'a> BBCourse<'a> {
-    fn attachment_is_appointment(attachment: &BBAttachment) -> bool {
-        attachment.mimetype == "application/pdf" && attachment.filename.find("ving").is_some()
+    fn attachment_is_appointment(&self, attachment: &BBAttachment) -> bool {
+        (self.appointment_evaluator)(attachment)
     }
 
     fn appointment_is_nth_appointment(appointment: &BBAttachment, appointment_number: usize) -> bool {
@@ -68,8 +69,9 @@ impl<'a> BBCourse<'a> {
         course_contents.append(&mut course_documents);
         course_contents.append(&mut course_assignments); 
 
+        eprintln!("HALLLO JA {:?}", course_contents);
+
         for content in course_contents {
-            eprintln!("Content type: {:?}", content.content_handler);
 
             let attachments_json_filename = format!("{}_{}_{}_attachments.json", self.course_code, self.semester, content.id);
             let attachments_json_path = self.out_dir.join(&attachments_json_filename);
@@ -77,11 +79,11 @@ impl<'a> BBCourse<'a> {
             let content_attachments = BBAttachment::vec_from_json_results(&attachments_json_path)?;
 
             for attachment in content_attachments {
-                if BBCourse::attachment_is_appointment(&attachment) {
-                    // eprintln!("\n{:?} er en appointment+++++++++++++++", attachment);
+                if self.attachment_is_appointment(&attachment) {
+                    eprintln!("\n{:?} er en appointment+++++++++++++++", attachment);
                     self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename))?;
                 } else {
-                    // eprintln!("\n{:?} er ikke en appointment-----------------", attachment);
+                    eprintln!("\n{:?} er ikke en appointment-----------------", attachment);
                 }
             }
         }
