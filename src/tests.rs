@@ -9,7 +9,7 @@ fn wiki_course_test() {
     let statistikk = super::course_manager::course::wiki_course::WikiCourse::new(
         "TMA4245", 
         "2021v", 
-        Path::new("./"), 
+        Path::new("./output/tma4245files/"), 
         ["https://www.math.ntnu.no/emner/TMA4245/2021v/skriftlige_ovinger/inn","-oppg-b.pdf"]
         .iter().map(|s| String::from(*s)).collect(),
     );
@@ -28,7 +28,7 @@ fn regtek_appointments_test() {
         session: &session,
         course_code: "TTK4105".to_string(),
         semester: "V21".to_string(),
-        out_dir: PathBuf::from("./ttk4105files/"),
+        out_dir: PathBuf::from("./output/ttk4105files/"),
         id: "_24810_1".to_string(),
         appointment_evaluator: &(|attachment| {
             course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
@@ -52,7 +52,7 @@ fn cpp_appointments_test() {
         session: &session,
         course_code: "TDT4102".to_string(),
         semester: "V21".to_string(),
-        out_dir: PathBuf::from("./tdt4102files/"),
+        out_dir: PathBuf::from("./output/tdt4102files/"),
         id: "_22729_1".to_string(),
         appointment_evaluator: &(|attachment| {
             course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
@@ -76,7 +76,7 @@ fn bb_course_announcements_test() {
         session: &session,
         course_code: "TTK4105".to_string(),
         semester: "V21".to_string(),
-        out_dir: PathBuf::from("./ttk4105files/"),
+        out_dir: PathBuf::from("./output/ttk4105files/"),
         id: "_24810_1".to_string(),
         appointment_evaluator: &(|attachment| {
             course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(

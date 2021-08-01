@@ -41,10 +41,10 @@ impl super::Course for WikiCourse {
     
     fn download_appointment(&self, appointment_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         const VALID_APPOINTMENT_SIZE_LIMIT: f64 = 10000.0; 
-        let appointment_path = &format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number);
+        let appointment_path = self.output_dir.join(&format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number));
         match download_file(
             &self.appointment_url_format_string.appointment_url(appointment_number), 
-            &self.output_dir.join(Path::new(appointment_path)),
+            &appointment_path,
             None
         ) {
             Ok(download_size) if download_size < VALID_APPOINTMENT_SIZE_LIMIT => {
