@@ -11,16 +11,16 @@ const UPPER_SEARCHED_APPOINTMENT_LIMIT: usize = 20;
 pub struct WikiCourse {
     course_code: String,
     semester: String,
-    output_dir: PathBuf,
+    out_dir: PathBuf,
     appointment_url_format_string: AppointmentUrlFormatString,
 }
 
 impl WikiCourse {
-    pub fn new(course_code: &str, semester: &str, output_dir: &Path, appointment_url_format_string: Vec<String>) -> WikiCourse {
+    pub fn new(course_code: &str, semester: &str, out_dir: &Path, appointment_url_format_string: Vec<String>) -> WikiCourse {
         WikiCourse {
             course_code: String::from(course_code),
             semester: String::from(semester),
-            output_dir: PathBuf::from(output_dir),
+            out_dir: PathBuf::from(out_dir),
             appointment_url_format_string: appointment_url::AppointmentUrlFormatString(appointment_url_format_string),
         }
     }
@@ -41,7 +41,7 @@ impl super::Course for WikiCourse {
     
     fn download_appointment(&self, appointment_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         const VALID_APPOINTMENT_SIZE_LIMIT: f64 = 10000.0; 
-        let appointment_path = self.output_dir.join(&format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number));
+        let appointment_path = self.out_dir.join(&format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number));
         match download_file(
             &self.appointment_url_format_string.appointment_url(appointment_number), 
             &appointment_path,

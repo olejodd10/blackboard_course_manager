@@ -24,19 +24,19 @@ fn regtek_appointments_test() {
         cookie_header: COOKIE_HEADER.to_string(),
     };
 
-    let regtek = course::blackboard_course::BBCourse {
-        session: &session,
-        course_code: "TTK4105".to_string(),
-        semester: "V21".to_string(),
-        out_dir: PathBuf::from("./output/ttk4105files/"),
-        id: "_24810_1".to_string(),
-        appointment_evaluator: &(|attachment| {
+    let regtek = course::blackboard_course::BBCourse::new(
+        &session,
+        "TTK4105".to_string(),
+        "V21".to_string(),
+        PathBuf::from("./output/ttk4105files/"),
+        "_24810_1".to_string(),
+        &(|attachment| {
             course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
                 attachment, 
                 "application/pdf", 
                 "-ov")
-        }),
-    };
+        })
+    );
 
     regtek.download_appointments().unwrap();
 }
@@ -48,19 +48,19 @@ fn cpp_appointments_test() {
         cookie_header: COOKIE_HEADER.to_string(),
     };
 
-    let cpp = course::blackboard_course::BBCourse {
-        session: &session,
-        course_code: "TDT4102".to_string(),
-        semester: "V21".to_string(),
-        out_dir: PathBuf::from("./output/tdt4102files/"),
-        id: "_22729_1".to_string(),
-        appointment_evaluator: &(|attachment| {
+    let cpp = course::blackboard_course::BBCourse::new(
+        &session,
+        "TDT4102".to_string(),
+        "V21".to_string(),
+        PathBuf::from("./output/tdt4102files/"),
+        "_22729_1".to_string(),
+        &(|attachment| {
             course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
                 attachment, 
                 "application/pdf", 
-                "ving")
-        }),
-    };
+                "oving")
+        })
+    );
 
     cpp.download_appointments().unwrap();
 }
@@ -72,19 +72,19 @@ fn bb_course_announcements_test() {
         cookie_header: COOKIE_HEADER.to_string(),
     };
 
-    let regtek = course::blackboard_course::BBCourse {
-        session: &session,
-        course_code: "TTK4105".to_string(),
-        semester: "V21".to_string(),
-        out_dir: PathBuf::from("./output/ttk4105files/"),
-        id: "_24810_1".to_string(),
-        appointment_evaluator: &(|attachment| {
+    let regtek = course::blackboard_course::BBCourse::new(
+        &session,
+        "TTK4105".to_string(),
+        "V21".to_string(),
+        PathBuf::from("./output/ttk4105files/"),
+        "_24810_1".to_string(),
+        &(|attachment| {
             course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
                 attachment, 
                 "application/pdf", 
-                "ving")
-        }),
-    };
+                "-ov")
+        })
+    );
 
     regtek.view_announcements(2, 1, 70).unwrap();
 }
