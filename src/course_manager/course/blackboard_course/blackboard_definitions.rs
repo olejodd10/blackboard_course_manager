@@ -5,16 +5,36 @@
 // x-bb-document
 // x-bb-assignment
 // x-bb-folder
-// x-bb-assignment
 // bb-panopto-bc-mashup
 
 use std::path::Path;
 
 #[derive(Debug)]
+pub enum BBContentHandler {
+    XBBFile,
+    XBBDocument,
+    XBBAssignment,
+    Undefined,
+    // XBBFolder,
+    // BBPanoptoBCMashup,
+}
+
+impl BBContentHandler {
+    pub fn new(content_handler: &str) -> BBContentHandler {
+        match content_handler {
+            "resource/x-bb-file" => BBContentHandler::XBBFile,
+            "resource/x-bb-document" => BBContentHandler::XBBDocument,
+            "resource/x-bb-assignment" => BBContentHandler::XBBAssignment,
+            _ => BBContentHandler::Undefined,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct BBContent {
-    pub attachments: Vec<BBAttachment>,
     pub id: String,
     pub title: String,
+    pub content_handler: BBContentHandler, 
 }
 
 impl BBContent {
@@ -24,9 +44,9 @@ impl BBContent {
 
         Ok(parsed_json["results"].members().map(|member| {
             BBContent {
-                attachments: Vec::new(),
                 id: member["id"].to_string(),
                 title: member["title"].to_string(),
+                content_handler: BBContentHandler::new(&member["contentHandler"]["id"].to_string()),
             }
         }).collect())
     }
