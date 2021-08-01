@@ -32,11 +32,13 @@ impl<'a> BBCourse<'a> {
         let course_announcements = BBAnnouncement::vec_from_json_results(&announcements_json_path)?;
 
         for announcement in course_announcements {
-            println!("TITLE: {}\nCREATOR: {}\nCREATED: {}\nMODIFIED: {}\n\n{}\n\n", 
+            println!("{}\nTITLE: {}\nCREATOR: {}\nCREATED: {}\nMODIFIED: {}\n{}\n{}\n",
+                "*".repeat(width),
                 announcement.title, 
                 announcement.creator,
                 announcement.created,
                 announcement.modified,
+                "-".repeat(width),
                 html2text::from_read(announcement.body.as_bytes(), width), 
             );
         }

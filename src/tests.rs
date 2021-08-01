@@ -48,5 +48,5 @@ fn bb_course_announcements_test() {
         id: "_24810_1".to_string(),
     };
 
-    regtek.view_announcements(5, 0, 70).unwrap();
+    regtek.view_announcements(2, 1, 70).unwrap();
 }

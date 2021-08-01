@@ -19,9 +19,11 @@ impl BBSession {
     pub fn download_course_announcements_json(&self, course_id: &str, limit: usize, offset: usize, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         // let fields = "id,title,contentHandler"; Alle egentlig interessante
         
-        let url = format!("https://{}/learn/api/public/v1/courses/{}/announcements",
+        let url = format!("https://{}/learn/api/public/v1/courses/{}/announcements?limit={}&offset={}",
             self.domain,
-            course_id);
+            course_id,
+            limit,
+            offset);
                 
         self.download_file(&url, &out_path)
     }
