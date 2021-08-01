@@ -13,7 +13,7 @@ pub struct BBCourse<'a> {
     pub out_dir: PathBuf,
     pub temp_dir: PathBuf,
     pub id: String,
-    pub appointment_evaluator: &'static dyn Fn(&BBAttachment) -> bool,
+    pub appointment_evaluator: &'static dyn Fn(&BBContent) -> bool,
 }
 
 
@@ -23,7 +23,7 @@ impl<'a> BBCourse<'a> {
             semester: String,
             out_dir: PathBuf,
             id: String,
-            appointment_evaluator: &'static dyn Fn(&BBAttachment) -> bool) -> BBCourse<'a> {
+            appointment_evaluator: &'static dyn Fn(&BBContent) -> bool) -> BBCourse<'a> {
         let temp_dir = out_dir.clone().join("temp");
         std::fs::create_dir_all(&out_dir).expect("Error creating out folder");
         std::fs::create_dir_all(&temp_dir).expect("Error creating temp folder");
@@ -38,8 +38,8 @@ impl<'a> BBCourse<'a> {
         }
     }
 
-    fn attachment_is_appointment(&self, attachment: &BBAttachment) -> bool {
-        (self.appointment_evaluator)(attachment)
+    fn content_is_appointment(&self, content: &BBContent) -> bool {
+        (self.appointment_evaluator)(content)
     }
 
     fn appointment_is_nth_appointment(appointment: &BBAttachment, appointment_number: usize) -> bool {
@@ -91,21 +91,16 @@ impl<'a> BBCourse<'a> {
         course_contents.append(&mut course_assignments); 
 
         for content in course_contents {
-
-            let attachments_json_filename = format!("{}_attachments.json", content.id);
-            let attachments_json_path = self.temp_dir.join(&attachments_json_filename);
-            self.session.download_content_attachments_json(&self.id, &content.id, &attachments_json_path)?;
-            let content_attachments = BBAttachment::vec_from_json_results(&attachments_json_path)?;
-
-            for attachment in content_attachments {
-                if self.attachment_is_appointment(&attachment) {
-                    // eprintln!("\n{:?} er en appointment+++++++++++++++", attachment);
+            if self.content_is_appointment(&content) {
+                let attachments_json_filename = format!("{}_attachments.json", content.id);
+                let attachments_json_path = self.temp_dir.join(&attachments_json_filename);
+                self.session.download_content_attachments_json(&self.id, &content.id, &attachments_json_path)?;
+                let content_attachments = BBAttachment::vec_from_json_results(&attachments_json_path)?;
+    
+                for attachment in content_attachments {
                     self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename))?;
-                } else {
-                    // eprintln!("\n{:?} er ikke en appointment-----------------", attachment);
                 }
             }
-
         }
 
         Ok(())

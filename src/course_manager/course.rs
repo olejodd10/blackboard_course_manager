@@ -3,6 +3,8 @@ pub mod blackboard_course;
 
 pub trait Course {
     //fn get_institution(&self) -> &str;
+    
+    // fn get_alias(&self) -> &str;
 
     fn get_course_code(&self) -> &str;
 

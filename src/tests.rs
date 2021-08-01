@@ -30,11 +30,10 @@ fn regtek_appointments_test() {
         "V21".to_string(),
         PathBuf::from("./output/ttk4105files/"),
         "_24810_1".to_string(),
-        &(|attachment| {
-            course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
-                attachment, 
-                "application/pdf", 
-                "-ov")
+        &(|content| {
+            course::blackboard_course::appointment_evaluators::title_substring(
+                content, 
+                "Øving ")
         })
     );
 
@@ -54,11 +53,10 @@ fn cpp_appointments_test() {
         "V21".to_string(),
         PathBuf::from("./output/tdt4102files/"),
         "_22729_1".to_string(),
-        &(|attachment| {
-            course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
-                attachment, 
-                "application/pdf", 
-                "oving")
+        &(|content| {
+            course::blackboard_course::appointment_evaluators::title_substring(
+                content, 
+                "Øvingstekst")
         })
     );
 
@@ -78,11 +76,10 @@ fn bb_course_announcements_test() {
         "V21".to_string(),
         PathBuf::from("./output/ttk4105files/"),
         "_24810_1".to_string(),
-        &(|attachment| {
-            course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
-                attachment, 
-                "application/pdf", 
-                "-ov")
+        &(|content| {
+            course::blackboard_course::appointment_evaluators::title_substring(
+                content, 
+                "Øving ")
         })
     );
 
