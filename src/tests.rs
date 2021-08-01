@@ -34,7 +34,7 @@ fn regtek_appointments_test() {
             course::blackboard_course::appointment_evaluators::mimetype_and_filename_substring(
                 attachment, 
                 "application/pdf", 
-                "ving")
+                "-ov")
         }),
     };
 

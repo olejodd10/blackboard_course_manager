@@ -79,8 +79,6 @@ impl BBSession {
             course_id,
             content_id,
             attachment_id);
-
-        eprintln!("url: {}\nout_path: {:?}\n", url, out_path);
         
         self.download_file(&url, &out_path)
     }
