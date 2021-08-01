@@ -5,8 +5,8 @@ const DEFAULT_FIELDS: &str = "id,title,contentHandler";
 
 #[derive(Debug)]
 pub struct BBSession {
-    domain: String,
-    cookie_header: String,
+    pub domain: String,
+    pub cookie_header: String,
 }
 
 impl BBSession {

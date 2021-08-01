@@ -1,15 +1,13 @@
 use std::path::{PathBuf, Path};
 use json;
 
-mod blackboard_session;
-mod blackboard_definitions;
+pub mod blackboard_session;
+pub mod blackboard_definitions;
 use blackboard_definitions::{BBAttachment, BBContent};
 
 #[derive(Debug)]
 pub struct BBCourse<'a> {
-    session: &'a blackboard_session::BBSession,
-    pub course_files: Vec<BBContent>,
-    pub course_documents: Vec<BBContent>,
+    pub session: &'a blackboard_session::BBSession,
     pub course_code: String,
     pub semester: String,
     pub out_dir: PathBuf,
@@ -30,76 +28,33 @@ impl<'a> BBCourse<'a> {
     //     unimplemented!();
     // }
 
-    fn fetch_course_files(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let session = self.session;
+    pub fn download_appointments(&self) -> Result<(), Box<dyn std::error::Error>> {
 
-        let json_filename = format!("{}_files.json", self.id);
-        let json_path = self.out_dir.join(&json_filename);
+        let files_json_filename = format!("{}_{}_files.json", self.course_code, self.semester);
+        let files_json_path = self.out_dir.join(&files_json_filename);
+        self.session.download_course_files_json(&self.id, &files_json_path)?;
+        let course_files = BBContent::vec_from_json_results(&files_json_path)?;
 
-        session.download_course_files_json(&self.id, &json_path)?;
+        let documents_json_filename = format!("{}_{}_documents.json", self.course_code, self.semester);
+        let documents_json_path = self.out_dir.join(&documents_json_filename);
+        self.session.download_course_files_json(&self.id, &documents_json_path)?;
+        let course_documents = BBContent::vec_from_json_results(&documents_json_path)?;
 
-        let json_string = std::fs::read_to_string(&json_path)?;
-        let parsed_json = json::parse(&json_string)?;
+        for content in course_files.iter().chain(course_documents.iter()) {
+            let attachments_json_filename = format!("{}_{}_{}_attachments.json", self.course_code, self.semester, content.id);
+            let attachments_json_path = self.out_dir.join(&attachments_json_filename);
+            self.session.download_content_attachments_json(&self.id, &content.id, &attachments_json_path)?;
+            let content_attachments = BBAttachment::vec_from_json_results(&attachments_json_path)?;
 
-        self.course_files = parsed_json["results"].members().map(|member| {
-            BBContent {
-                attachments: Vec::new(),
-                id: member["id"].to_string(),
-                title: member["title"].to_string(),
-            }
-        }).collect();
-
-        Ok(())
-    }
-
-    fn fetch_course_file_attachments(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        for file in &mut self.course_files {
-            file.fetch_attachments(&self)?
-        }
-        Ok(())
-    }
-
-    fn fetch_course_documents(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let session = self.session;
-
-        let json_filename = format!("{}_documents.json", self.id);
-        let json_path = self.out_dir.join(&json_filename);
-
-        session.download_course_documents_json(&self.id, &json_path)?;
-
-        let json_string = std::fs::read_to_string(&json_path)?;
-        let parsed_json = json::parse(&json_string)?;
-
-        self.course_documents = parsed_json["results"].members().map(|member| {
-            BBContent {
-                attachments: Vec::new(),
-                id: member["id"].to_string(),
-                title: member["title"].to_string(),
-            }
-        }).collect();
-
-        Ok(())
-    }
-
-    fn fetch_course_document_attachments(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        for document in &mut self.course_documents {
-            document.fetch_attachments(&self)?
-        }
-        Ok(())
-    }
-
-    pub fn get_course_appointments(&self) -> Result<Vec<&BBAttachment>, Box<dyn std::error::Error>> {
-
-        let mut appointments = Vec::new();
-        for content in self.course_files.iter().chain(self.course_documents.iter()) {
-            for attachment in &content.attachments {
-                if BBCourse::attachment_is_appointment(attachment) {
-                    appointments.push(attachment);
-                }
+            for attachment in content_attachments {
+                if BBCourse::attachment_is_appointment(&attachment) {
+                    eprintln!("{:?} er en appointment", attachment);
+                    self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename))?;
+                } 
             }
         }
 
-        Ok(appointments)
+        Ok(())
     }
 }
 

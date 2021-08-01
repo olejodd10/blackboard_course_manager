@@ -26,4 +26,5 @@ impl CourseManager {
             println!("{} {}", course.get_course_code(), course.get_semester());
         }
     }
+
 }
