@@ -12,8 +12,8 @@ pub struct BBSession {
 impl BBSession {
     //Eventuelt kan disse ta inn BB-structs
 
-    pub fn download_file(&self, url: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        download::download_file(&url, &out_path, Some(&[&self.cookie_header]))
+    pub fn download_file(&self, url: &str, out_path: &Path, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+        download::download_file(&url, &out_path, Some(&[&self.cookie_header]), overwrite)
     }
 
     fn download_course_contents_json(&self, course_id: &str, content_handler: Option<&str>, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
@@ -35,7 +35,7 @@ impl BBSession {
             url.extend(format!("?{}", query_arguments.join("&")).chars());
         }
 
-        self.download_file(&url, out_path)
+        self.download_file(&url, out_path, true)
     }
 
     pub fn download_course_files_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
@@ -59,7 +59,7 @@ impl BBSession {
             limit,
             offset);
                 
-        self.download_file(&url, &out_path)
+        self.download_file(&url, &out_path, true)
     }
     
     pub fn download_content_attachments_json(&self, course_id: &str, content_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
@@ -69,10 +69,10 @@ impl BBSession {
             course_id,
             content_id);
     
-        self.download_file(&url, &out_path)
+        self.download_file(&url, &out_path, true)
     }
 
-    pub fn download_content_attachment(&self, course_id: &str, content_id: &str, attachment_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+    pub fn download_content_attachment(&self, course_id: &str, content_id: &str, attachment_id: &str, out_path: &Path, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
 
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
             self.domain,
@@ -80,7 +80,7 @@ impl BBSession {
             content_id,
             attachment_id);
         
-        self.download_file(&url, &out_path)
+        self.download_file(&url, &out_path, overwrite)
     }
     
     // pub fn download_course_assessment_questions_json(...)

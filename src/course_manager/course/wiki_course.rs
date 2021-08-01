@@ -46,7 +46,8 @@ impl super::Course for WikiCourse {
         match download_file(
             &self.appointment_url_format_string.appointment_url(appointment_number), 
             &appointment_path,
-            None
+            None,
+            false
         ) {
             Ok(download_size) if download_size < VALID_APPOINTMENT_SIZE_LIMIT => {
                 std::fs::remove_file(appointment_path)?;

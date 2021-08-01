@@ -3,8 +3,10 @@ use std::io::Write;
 use curl::easy::{Easy, List};
 
 
-pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>) -> Result<f64, Box<dyn std::error::Error>> {
+pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
     
+    if !overwrite && out_path.exists() { return Ok(0.0); }
+
     let mut out_file = std::fs::File::create(&out_path).expect("Error creating out_file");
 
     let mut easy = Easy::new();
@@ -33,8 +35,10 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>) 
 }
 
 
-pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&str]>) -> Result<f64, Box<dyn std::error::Error>> {
+pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
     
+    if !overwrite && out_path.exists() { return Ok(0.0); }
+
     let out_path = PathBuf::from(out_path); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
 
     let mut easy = Easy::new();

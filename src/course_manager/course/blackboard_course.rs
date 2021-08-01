@@ -99,15 +99,20 @@ impl<'a> BBCourse<'a> {
         BBAttachment::vec_from_json_results(&attachments_json_path)
     }
 
-    pub fn download_content_attachments(&self, content: &BBContent, attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn download_content_attachments(
+        &self, 
+        content: &BBContent, 
+        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        overwrite: bool
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let content_attachments = self.get_content_attachments(content)?;
         if let Some(attachment_predicate) = attachment_predicate {
             for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
-                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename))?;
+                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename), overwrite)?;
             }
         } else {
             for attachment in content_attachments {
-                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename))?;
+                self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename), overwrite)?;
             }
         }
         Ok(())
@@ -116,16 +121,17 @@ impl<'a> BBCourse<'a> {
     pub fn download_course_content_attachments(
         &self, 
         content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>, 
-        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>
+        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        overwrite: bool
     ) -> Result<(), Box<dyn std::error::Error>> {
         let course_content = self.get_course_content()?;
         if let Some(content_predicate) = content_predicate {
             for content in course_content.into_iter().filter(|content| content_predicate(content)) {
-                self.download_content_attachments(&content, attachment_predicate)?;
+                self.download_content_attachments(&content, attachment_predicate, overwrite)?;
             }
         } else {
             for content in course_content {
-                self.download_content_attachments(&content, attachment_predicate)?;
+                self.download_content_attachments(&content, attachment_predicate, overwrite)?;
             }
         }
         Ok(())

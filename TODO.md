@@ -10,3 +10,5 @@ Ting å implementere:
 * download_content_attachments
 * get_matching_content
 * get_matching_attachments
+* Legg til notifikasjon når den prøver å laste ned ting som eksisterer
+* content tree a la Edvard
