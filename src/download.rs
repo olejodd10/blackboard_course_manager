@@ -26,6 +26,7 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
     }
 
     easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
+    easy.fail_on_error(true)?; //Viktig for å faile på 401
     
     easy.perform()?;
     
@@ -58,7 +59,8 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
     }
 
     easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
-    
+    easy.fail_on_error(true)?; //Viktig for å faile på 401
+
     easy.perform()?;
 
     // eprintln!("Response code: {}", easy.response_code().unwrap());

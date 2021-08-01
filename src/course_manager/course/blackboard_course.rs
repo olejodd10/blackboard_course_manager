@@ -136,6 +136,12 @@ impl<'a> BBCourse<'a> {
         }
         Ok(())
     }
+
+    // pub fn download_course_content_tree(
+
+    // ) -> Result<(), Box<dyn std::error::Error>> {
+
+    // }
 }
 
 // impl super::Course for BBCourse {
