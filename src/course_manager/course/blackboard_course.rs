@@ -69,8 +69,6 @@ impl<'a> BBCourse<'a> {
         course_contents.append(&mut course_documents);
         course_contents.append(&mut course_assignments); 
 
-        eprintln!("HALLLO JA {:?}", course_contents);
-
         for content in course_contents {
 
             let attachments_json_filename = format!("{}_{}_{}_attachments.json", self.course_code, self.semester, content.id);
@@ -80,10 +78,10 @@ impl<'a> BBCourse<'a> {
 
             for attachment in content_attachments {
                 if self.attachment_is_appointment(&attachment) {
-                    eprintln!("\n{:?} er en appointment+++++++++++++++", attachment);
+                    // eprintln!("\n{:?} er en appointment+++++++++++++++", attachment);
                     self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename))?;
                 } else {
-                    eprintln!("\n{:?} er ikke en appointment-----------------", attachment);
+                    // eprintln!("\n{:?} er ikke en appointment-----------------", attachment);
                 }
             }
         }

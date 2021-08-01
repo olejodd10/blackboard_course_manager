@@ -23,8 +23,10 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>) 
         easy.http_headers(list).unwrap();
     }
 
+    easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
+    
     easy.perform()?;
-
+    
     // eprintln!("Response code: {}", easy.response_code().unwrap());
 
     Ok(easy.download_size()?)
@@ -51,9 +53,11 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
         easy.http_headers(list).unwrap();
     }
 
-    // eprintln!("Response code: {}", easy.response_code().unwrap());
-
+    easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
+    
     easy.perform()?;
+
+    // eprintln!("Response code: {}", easy.response_code().unwrap());
 
     Ok(easy.download_size()?)
 }
