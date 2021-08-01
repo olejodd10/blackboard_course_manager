@@ -17,6 +17,7 @@ pub struct WikiCourse {
 
 impl WikiCourse {
     pub fn new(course_code: &str, semester: &str, out_dir: &Path, appointment_url_format_string: Vec<String>) -> WikiCourse {
+        std::fs::create_dir_all(&out_dir).expect("Error creating out folder");
         WikiCourse {
             course_code: String::from(course_code),
             semester: String::from(semester),

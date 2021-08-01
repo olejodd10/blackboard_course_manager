@@ -38,6 +38,8 @@ pub struct BBContent {
 }
 
 impl BBContent {
+    const VIEW_WIDTH: usize = 50;
+
     pub fn vec_from_json_results(json_path: &Path) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
         let json_string = std::fs::read_to_string(&json_path)?;
         let parsed_json = json::parse(&json_string)?;
@@ -49,6 +51,14 @@ impl BBContent {
                 content_handler: BBContentHandler::new(&member["contentHandler"]["id"].to_string()),
             }
         }).collect())
+    }
+
+    pub fn view(&self) {
+        println!("{}\nTITLE: {}\nCONTENT HANDLER: {:?}\n",
+            "*".repeat(BBContent::VIEW_WIDTH),
+            self.title,
+            self.content_handler
+        );
     }
 }
 
@@ -86,6 +96,8 @@ pub struct BBAnnouncement {
 }
 
 impl BBAnnouncement {
+    const VIEW_WIDTH: usize = 50;
+
     pub fn vec_from_json_results(json_path: &Path) -> Result<Vec<BBAnnouncement>, Box<dyn std::error::Error>> {
         let json_string = std::fs::read_to_string(&json_path)?;
         let parsed_json = json::parse(&json_string)?;
@@ -100,6 +112,18 @@ impl BBAnnouncement {
                 modified: member["modified"].to_string(),
             }
         }).collect())
+    }
+
+    pub fn view(&self) {
+        println!("{}\nTITLE: {}\nCREATOR: {}\nCREATED: {}\nMODIFIED: {}\n{}\n{}\n",
+            "*".repeat(BBAnnouncement::VIEW_WIDTH),
+            self.title,
+            self.creator,
+            self.created,
+            self.modified,
+            "-".repeat(BBAnnouncement::VIEW_WIDTH),
+            html2text::from_read(self.body.as_bytes(), BBAnnouncement::VIEW_WIDTH), 
+        );
     }
 }
 
