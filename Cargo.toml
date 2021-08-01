@@ -1,0 +1,16 @@
+[package]
+name = "blackboard_appointment_fetcher"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+curl = "0.4.38"
+zip-extract = "0.1.0"
+json = "0.12.4"
+html2text = "0.2.1"
+
+[[bin]]
+path = "src/main.rs"
+name = "bbaf"
