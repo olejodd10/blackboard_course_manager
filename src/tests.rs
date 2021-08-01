@@ -35,7 +35,7 @@ fn regtek_appointments_test() {
     regtek.download_course_content_attachments(
         Some(&(
             |content| {
-            course::blackboard_course::appointment_verifiers::title_substring(
+            course::blackboard_course::predicate_utils::title_substring(
                 content, 
                 "Øving ")
             }
@@ -64,7 +64,7 @@ fn cpp_appointments_test() {
     cpp.download_course_content_attachments(
         Some(&(
             |content| {
-            course::blackboard_course::appointment_verifiers::title_substring(
+            course::blackboard_course::predicate_utils::title_substring(
                 content, 
                 "Øvingstekst")
             }

@@ -3,7 +3,7 @@ use json;
 
 pub mod blackboard_session;
 pub mod blackboard_definitions;
-pub mod appointment_verifiers;
+pub mod predicate_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement};
 
 pub struct BBCourse<'a> {
