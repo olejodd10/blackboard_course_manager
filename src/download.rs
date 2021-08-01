@@ -17,7 +17,7 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>) 
     if let Some(headers) = headers {
         let mut list = List::new();
         for header in headers {
-            eprintln!("Adding header: {}", header);
+            // eprintln!("Adding header: {}", header);
             list.append(header).unwrap();
         }
         easy.http_headers(list).unwrap();
@@ -25,7 +25,7 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>) 
 
     easy.perform()?;
 
-    eprintln!("Response code: {}", easy.response_code().unwrap());
+    // eprintln!("Response code: {}", easy.response_code().unwrap());
 
     Ok(easy.download_size()?)
 }
@@ -45,13 +45,13 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
     if let Some(headers) = headers {
         let mut list = List::new();
         for header in headers {
-            eprintln!("Adding header: {}", header);
+            // eprintln!("Adding header: {}", header);
             list.append(header).unwrap();
         }
         easy.http_headers(list).unwrap();
     }
 
-    eprintln!("Response code: {}", easy.response_code().unwrap());
+    // eprintln!("Response code: {}", easy.response_code().unwrap());
 
     easy.perform()?;
 

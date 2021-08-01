@@ -3,7 +3,7 @@ use json;
 
 pub mod blackboard_session;
 pub mod blackboard_definitions;
-use blackboard_definitions::{BBAttachment, BBContent};
+use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement};
 
 #[derive(Debug)]
 pub struct BBCourse<'a> {
@@ -24,10 +24,27 @@ impl<'a> BBCourse<'a> {
         appointment.filename.find(&appointment_number.to_string()).is_some()
     }
     
-    // pub fn fetch_announcements(&self, limit: usize, offset: usize) -> Result<Vec<BBAnnouncement>, Box<dyn std::error::Error>> {
-    //     unimplemented!();
-    // }
+    pub fn view_announcements(&self, limit: usize, offset: usize, width: usize) -> Result<(), Box<dyn std::error::Error>> {
+        let announcements_json_filename = format!("{}_{}_announcements.json", self.course_code, self.semester);
+        let announcements_json_path = self.out_dir.join(&announcements_json_filename);
+        self.session.download_course_announcements_json(&self.id, limit, offset, &announcements_json_path)?;
 
+        let course_announcements = BBAnnouncement::vec_from_json_results(&announcements_json_path)?;
+
+        for announcement in course_announcements {
+            println!("TITLE: {}\nCREATOR: {}\nCREATED: {}\nMODIFIED: {}\n\n{}\n\n", 
+                announcement.title, 
+                announcement.creator,
+                announcement.created,
+                announcement.modified,
+                html2text::from_read(announcement.body.as_bytes(), width), 
+            );
+        }
+
+        Ok(())
+    }
+
+    //Overwrite-argument!
     pub fn download_appointments(&self) -> Result<(), Box<dyn std::error::Error>> {
 
         let files_json_filename = format!("{}_{}_files.json", self.course_code, self.semester);
@@ -48,9 +65,11 @@ impl<'a> BBCourse<'a> {
 
             for attachment in content_attachments {
                 if BBCourse::attachment_is_appointment(&attachment) {
-                    eprintln!("{:?} er en appointment", attachment);
+                    eprintln!("\n{:?} er en appointment+++++++++++++++", attachment);
                     self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &self.out_dir.join(&attachment.filename))?;
-                } 
+                } else {
+                    eprintln!("\n{:?} er ikke en appointment-----------------", attachment);
+                }
             }
         }
 
