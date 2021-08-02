@@ -1,86 +1,93 @@
 use std::path::{PathBuf, Path};
-use json;
 
 pub mod blackboard_session;
 pub mod blackboard_definitions;
 pub mod predicate_utils;
+pub mod filename_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
+use filename_utils::valid_filename;
 
 pub struct BBCourse<'a> {
-    pub session: &'a blackboard_session::BBSession,
-    pub course_code: String,
-    pub semester: String,
-    out_dir: PathBuf,
+    session: &'a blackboard_session::BBSession,
+    course_code: String,
+    semester: String,
+    alias: String,
+    // base_dir: PathBuf,
     files_dir: PathBuf,
     temp_dir: PathBuf,
     tree_dir: PathBuf,
-    pub id: String,
+    id: String,
 }
 
 
 impl<'a> BBCourse<'a> {
     pub fn new(
             session: &'a blackboard_session::BBSession,
-            course_code: String,
-            semester: String,
-            out_dir: PathBuf,
-            id: String
-        ) -> BBCourse<'a> {
-        let temp_dir = out_dir.join("temp");
-        let files_dir = out_dir.join("downloaded_files");
-        let tree_dir = out_dir.join("content_tree");
-        std::fs::create_dir_all(&out_dir).expect("Error creating out folder");
+            course_code: &str,
+            semester: &str,
+            alias: &str,
+            base_dir: &Path,
+            id: &str
+    ) -> BBCourse<'a> {
+        let files_dir = base_dir.join("downloaded_files");
+        let temp_dir = base_dir.join("temp");
+        let tree_dir = base_dir.join("content_tree");
+        std::fs::create_dir_all(&base_dir).expect("Error creating base folder");
+        std::fs::create_dir_all(&files_dir).expect("Error creating files folder"); 
         std::fs::create_dir_all(&temp_dir).expect("Error creating temp folder");
+        std::fs::create_dir_all(&tree_dir).expect("Error creating tree folder");
         BBCourse {
             session,
-            course_code,
-            semester,
-            out_dir,
+            course_code: course_code.to_string(),
+            semester: semester.to_string(),
+            alias: alias.to_string(),
+            // base_dir,
             files_dir,
             temp_dir,
             tree_dir,
             // announcements_dir, ...
-            id,
+            id: id.to_string(),
         }
-    }
-
-    fn appointment_is_nth_appointment(appointment: &BBAttachment, appointment_number: usize) -> bool {
-        appointment.filename.find(&appointment_number.to_string()).is_some()
     }
 
     // Everything it takes to create the course content tree
     fn get_course_root_content(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
         let root_content_json_filename = "root_content.json";
         let root_content_json_path = self.temp_dir.join(&root_content_json_filename);
-        self.session.download_course_files_json(&self.id, &root_content_json_path)?;
+        self.session.download_course_root_contents_json(&self.id, &root_content_json_path)?;
         BBContent::vec_from_json_results(&root_content_json_path)
     }
 
     fn get_content_children(&self, content: &BBContent) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let content_children_json_filename = format!("{}_children.json", content.title);
+        let content_children_json_filename = format!("{}_children.json", valid_filename(&content.title));
         let content_children_json_path = self.temp_dir.join(&content_children_json_filename);
-        self.session.download_course_files_json(&self.id, &content_children_json_path)?;
+        self.session.download_content_children_json(&self.id, &content.id, Some(&[blackboard_session::DEFAULT_FIELDS]), &content_children_json_path)?;
         BBContent::vec_from_json_results(&content_children_json_path)
     }
 
     pub fn download_course_content_tree(&self, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
         let mut total_download_size = 0.0;
-        std::fs::create_dir(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
+        // std::fs::create_dir_all(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
         for content in self.get_course_root_content()? {
             total_download_size += self.download_children(&content, &self.tree_dir, unzip, overwrite)?;
         }
+        eprintln!("Content tree download completed. Total download size: {} bytes.", total_download_size);
         Ok(total_download_size)
     }
 
     fn download_children(&self, content: &BBContent, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
         match content.content_handler {
-            BBContentHandler::XBBFile | BBContentHandler::XBBDocument | BBContentHandler::XBBAssignment => self.download_content_attachments(content, None, &out_path.join(&content.title), unzip, overwrite),
+            BBContentHandler::XBBFile | BBContentHandler::XBBDocument | BBContentHandler::XBBAssignment => {
+                let attachments_path = out_path.join(&valid_filename(&content.title));
+                std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
+                self.download_content_attachments(content, None, &attachments_path, unzip, overwrite) 
+            },
             BBContentHandler::XBBFolder => {
-                let child_path = out_path.join(&content.title);
+                let children_path = out_path.join(&valid_filename(&content.title));
                 let mut total_download_size = 0.0;
-                std::fs::create_dir(&child_path).expect("Error creating child dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
+                std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
                 for child in self.get_content_children(content)? {
-                    total_download_size += self.download_children(&child, &child_path, unzip, overwrite)?;
+                    total_download_size += self.download_children(&child, &children_path, unzip, overwrite)?;
                 }
                 Ok(total_download_size)
             },
@@ -142,7 +149,7 @@ impl<'a> BBCourse<'a> {
 
     // Attachments
     pub fn get_content_attachments(&self, content: &BBContent) -> Result<Vec<BBAttachment>, Box<dyn std::error::Error>> {
-        let attachments_json_filename = format!("{}_attachments.json", content.title);
+        let attachments_json_filename = format!("{}_attachments.json", valid_filename(&content.title));
         let attachments_json_path = self.temp_dir.join(&attachments_json_filename);
         self.session.download_content_attachments_json(&self.id, &content.id, &attachments_json_path)?;
         BBAttachment::vec_from_json_results(&attachments_json_path)
@@ -197,36 +204,23 @@ impl<'a> BBCourse<'a> {
 
 }
 
-// impl super::Course for BBCourse {
-//     fn get_available_appointments(&self) -> Vec<usize> {
-//         let appointments = self.get_course_appointments();
-//         (1..20).filter(|appointment_number| {
-//             appointments.iter().any(|appointment| BBCourse::appointment_is_nth_appointment(*appointment, appointment_number))
-//         }).collect()
-//     }
+impl<'a> super::Course for BBCourse<'a> {
+    fn get_alias(&self) -> &str {
+        &self.alias
+    }
 
-//     fn download_appointment(&self, appointment_number: usize) -> Result<(), Box<dyn std::error::Error>> {
-//         let appointment = self.get_course_appointments()
-//             .into_iter()
-//             .find(|appointment| BBCourse::appointment_is_nth_appointment(appointment, appointment_number))
-//             .unwrap();
-        
-//         let file_url = format!("https://ntnu.blackboard.com/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
-//             self.id,
-//             appointment.content_id,
-//             appointment.attachment_id);
-            
-//         if appointment.mimetype == "attribute/zip" {
-//             self.session.download_file(&file_url, &self.out_dir)?;
-//             Ok(())
-//         } else {
-//             let output_file_name = format!("{}_{}_{}.pdf", self.course_code, self.semester, appointment_number);
-//             self.session.download_file(&file_url, &self.out_dir.join(output_file_name))?;
-//             Ok(())
-//         }
-//     }
-// }
+    fn set_alias(&mut self, new_alias: &str) {
+        self.alias = String::from(new_alias);
+    }
 
+    fn get_course_code(&self) -> &str {
+        &self.course_code
+    }
+
+    fn get_semester(&self) -> &str {
+        &self.get_semester()
+    }
+}
 
 impl<'a> Drop for BBCourse<'a> {
     fn drop(&mut self) {

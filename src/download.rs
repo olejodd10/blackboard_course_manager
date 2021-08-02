@@ -7,6 +7,8 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
     
     if !overwrite && out_path.exists() { return Ok(0.0); }
 
+    eprintln!("Downloading {:?}", out_path);
+
     let mut out_file = std::fs::File::create(&out_path).expect("Error creating out_file");
 
     let mut easy = Easy::new();
@@ -19,7 +21,6 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
     if let Some(headers) = headers {
         let mut list = List::new();
         for header in headers {
-            // eprintln!("Adding header: {}", header);
             list.append(header).unwrap();
         }
         easy.http_headers(list).unwrap();
@@ -30,8 +31,6 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
     
     easy.perform()?;
     
-    // eprintln!("Response code: {}", easy.response_code().unwrap());
-
     Ok(easy.download_size()?)
 }
 
@@ -49,6 +48,8 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
         }
     }
 
+    eprintln!("Downloading and unzipping {:?}", out_path);
+
     let mut easy = Easy::new();
     easy.url(file_url)?;
     easy.write_function(move |data| { 
@@ -59,7 +60,6 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
     if let Some(headers) = headers {
         let mut list = List::new();
         for header in headers {
-            // eprintln!("Adding header: {}", header);
             list.append(header).unwrap();
         }
         easy.http_headers(list).unwrap();

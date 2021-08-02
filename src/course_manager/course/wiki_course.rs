@@ -11,16 +11,18 @@ const UPPER_SEARCHED_APPOINTMENT_LIMIT: usize = 20;
 pub struct WikiCourse {
     course_code: String,
     semester: String,
+    alias: String,
     out_dir: PathBuf,
     appointment_url_format_string: AppointmentUrlFormatString,
 }
 
 impl WikiCourse {
-    pub fn new(course_code: &str, semester: &str, out_dir: &Path, appointment_url_format_string: Vec<String>) -> WikiCourse {
+    pub fn new(course_code: &str, semester: &str, alias: &str, out_dir: &Path, appointment_url_format_string: Vec<String>) -> WikiCourse {
         std::fs::create_dir_all(&out_dir).expect("Error creating out folder");
         WikiCourse {
             course_code: String::from(course_code),
             semester: String::from(semester),
+            alias: String::from(alias),
             out_dir: PathBuf::from(out_dir),
             appointment_url_format_string: appointment_url::AppointmentUrlFormatString(appointment_url_format_string),
         }
@@ -28,6 +30,14 @@ impl WikiCourse {
 }
 
 impl super::Course for WikiCourse {
+    fn get_alias(&self) -> &str {
+        &self.alias
+    }
+
+    fn set_alias(&mut self, new_alias: &str) {
+        self.alias = String::from(new_alias);
+    }
+
     fn get_course_code(&self) -> &str {
         &self.course_code
     }
@@ -36,6 +46,10 @@ impl super::Course for WikiCourse {
         &self.semester
     }
 
+}
+
+impl WikiCourse {
+    
     fn get_available_appointments(&self) -> Vec<usize> {
         (LOWER_SEARCHED_APPOINTMENT_LIMIT..=UPPER_SEARCHED_APPOINTMENT_LIMIT).take_while(|appointment_number| self.download_appointment(*appointment_number).is_ok()).collect()
     }
@@ -57,4 +71,5 @@ impl super::Course for WikiCourse {
         }
         Ok(())
     }
+
 }

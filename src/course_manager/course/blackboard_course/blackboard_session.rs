@@ -1,7 +1,7 @@
 use crate::download;
 use std::path::{Path, PathBuf};
 
-const DEFAULT_FIELDS: &str = "fields=id,title,contentHandler";
+pub const DEFAULT_FIELDS: &str = "fields=id,title,contentHandler";
 
 #[derive(Debug)]
 pub struct BBSession {
@@ -32,11 +32,11 @@ impl BBSession {
         self.download_file(&url, out_path, true)
     }
 
-    fn download_course_root_contents_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+    pub fn download_course_root_contents_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         self.download_course_contents_json(course_id, Some(&[DEFAULT_FIELDS]), out_path)
     }
 
-    fn download_content_children_json(&self, course_id: &str, content_id: &str, query_parameters: Option<&[&str]>, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+    pub fn download_content_children_json(&self, course_id: &str, content_id: &str, query_parameters: Option<&[&str]>, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/children",
             self.domain,
             course_id,

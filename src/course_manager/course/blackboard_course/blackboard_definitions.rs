@@ -25,7 +25,11 @@ impl BBContentHandler {
             "resource/x-bb-file" => BBContentHandler::XBBFile,
             "resource/x-bb-document" => BBContentHandler::XBBDocument,
             "resource/x-bb-assignment" => BBContentHandler::XBBAssignment,
-            _ => BBContentHandler::Undefined,
+            "resource/x-bb-folder" => BBContentHandler::XBBFolder,
+            _ => {
+                eprintln!("Warning: Unknown BlackBoard content handler \"{}\"", content_handler);
+                BBContentHandler::Undefined
+            },
         }
     }
 }
