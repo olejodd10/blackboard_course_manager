@@ -14,8 +14,8 @@ pub enum BBContentHandler {
     XBBFile,
     XBBDocument,
     XBBAssignment,
+    XBBFolder,
     Undefined,
-    // XBBFolder,
     // BBPanoptoBCMashup,
 }
 

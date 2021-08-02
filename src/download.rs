@@ -38,10 +38,16 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
 
 pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
 
-    if !overwrite && out_path.exists() { return Ok(0.0); }
-
-    let out_dir = out_path.with_extension(""); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
-    std::fs::create_dir_all(out_dir.clone())?; // Må klone for å unngå feilmelding
+    let out_dir = PathBuf::from(out_path.with_extension("")); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
+    
+    if out_dir.exists() {
+        if !overwrite {
+            return Ok(0.0);
+        } else {
+            std::fs::remove_dir_all(&out_dir)?;
+            std::fs::create_dir_all(out_dir.clone())?; // Må klone for å unngå feilmelding        
+        }
+    }
 
     let mut easy = Easy::new();
     easy.url(file_url)?;
@@ -63,8 +69,6 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
     easy.fail_on_error(true)?; //Viktig for å faile på 401
 
     easy.perform()?;
-
-    std::fs::remove_file(&out_path)?;
 
     Ok(easy.download_size()?)
 }

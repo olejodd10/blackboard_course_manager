@@ -1,7 +1,7 @@
 use crate::download;
 use std::path::{Path, PathBuf};
 
-const DEFAULT_FIELDS: &str = "id,title,contentHandler";
+const DEFAULT_FIELDS: &str = "fields=id,title,contentHandler";
 
 #[derive(Debug)]
 pub struct BBSession {
@@ -20,40 +20,48 @@ impl BBSession {
         download::download_and_unzip(&url, &out_path, Some(&[&self.cookie_header]), overwrite)
     }
 
-    fn download_course_contents_json(&self, course_id: &str, content_handler: Option<&str>, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+    fn download_course_contents_json(&self, course_id: &str, query_parameters: Option<&[&str]>, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents",
             self.domain,
             course_id);
-
-        let mut query_arguments = Vec::new(); 
         
-        //Default arguments:
-        query_arguments.push("recursive=true".to_string());
-        query_arguments.push(format!("fields={}", DEFAULT_FIELDS));
-
-        if let Some(content_handler) = content_handler {
-            query_arguments.push(format!("contentHandler={}", content_handler));
+        if let Some(query_parameters) = query_parameters {
+            url.extend(format!("?{}", query_parameters.join("&")).chars());
         }
+
+        self.download_file(&url, out_path, true)
+    }
+
+    fn download_course_root_contents_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+        self.download_course_contents_json(course_id, Some(&[DEFAULT_FIELDS]), out_path)
+    }
+
+    fn download_content_children_json(&self, course_id: &str, content_id: &str, query_parameters: Option<&[&str]>, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+        let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/children",
+            self.domain,
+            course_id,
+            content_id);
     
-        if !query_arguments.is_empty() {
-            url.extend(format!("?{}", query_arguments.join("&")).chars());
+        if let Some(query_parameters) = query_parameters {
+            url.extend(format!("?{}", query_parameters.join("&")).chars());
         }
 
         self.download_file(&url, out_path, true)
     }
 
     pub fn download_course_files_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        self.download_course_contents_json(course_id, Some("resource/x-bb-file"), out_path)
+        self.download_course_contents_json(course_id, Some(&["contentHandler=resource/x-bb-file","recursive=true", DEFAULT_FIELDS]), out_path)
     }
 
     pub fn download_course_documents_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        self.download_course_contents_json(course_id, Some("resource/x-bb-document"), out_path)
+        self.download_course_contents_json(course_id, Some(&["contentHandler=resource/x-bb-document","recursive=true", DEFAULT_FIELDS]), out_path)
     }
 
     pub fn download_course_assignments_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        self.download_course_contents_json(course_id, Some("resource/x-bb-assignment"), out_path)
+        self.download_course_contents_json(course_id, Some(&["contentHandler=resource/x-bb-assignment","recursive=true", DEFAULT_FIELDS]), out_path)
     }
     
+    // Add query_parameters argument!
     pub fn download_course_announcements_json(&self, course_id: &str, limit: usize, offset: usize, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         // let fields = "id,title,contentHandler"; Alle egentlig interessante
         
