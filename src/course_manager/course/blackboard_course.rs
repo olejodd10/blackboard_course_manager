@@ -1,11 +1,12 @@
 use std::path::{PathBuf, Path};
+use std::io::Write;
 
 pub mod blackboard_session;
 pub mod blackboard_definitions;
 pub mod predicate_utils;
 pub mod filename_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
-use filename_utils::{valid_dir_name, valid_filename};
+use filename_utils::valid_dir_name;
 
 pub struct BBCourse<'a> {
     session: &'a blackboard_session::BBSession,
@@ -65,33 +66,53 @@ impl<'a> BBCourse<'a> {
         BBContent::vec_from_json_results(&content_children_json_path)
     }
 
-    pub fn download_course_content_tree(&self, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+    pub fn download_course_content_tree(
+        &self, 
+        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        unzip: bool, 
+        overwrite: bool
+    ) -> Result<f64, Box<dyn std::error::Error>> {
         let mut total_download_size = 0.0;
         // std::fs::create_dir_all(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
         for content in self.get_course_root_content()? {
-            total_download_size += self.download_children(&content, &self.tree_dir, unzip, overwrite)?;
+            total_download_size += self.download_children(&content, attachment_predicate, &self.tree_dir, unzip, overwrite)?;
         }
         eprintln!("Content tree download completed. Total download size: {} bytes.", total_download_size);
         Ok(total_download_size)
     }
 
-    fn download_children(&self, content: &BBContent, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+    fn download_children(&self, 
+        content: &BBContent, 
+        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        out_path: &Path, 
+        unzip: bool, 
+        overwrite: bool
+    ) -> Result<f64, Box<dyn std::error::Error>> {
         match content.content_handler {
             BBContentHandler::XBBFile | BBContentHandler::XBBDocument | BBContentHandler::XBBAssignment => {
                 let attachments_path = out_path.join(&valid_dir_name(&content.title));
                 std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
-                self.download_content_attachments(content, None, &attachments_path, unzip, overwrite) 
+                self.download_content_attachments(content, attachment_predicate, &attachments_path, unzip, overwrite) 
             },
             BBContentHandler::XBBFolder => {
                 let children_path = out_path.join(&valid_dir_name(&content.title));
                 let mut total_download_size = 0.0;
                 std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
                 for child in self.get_content_children(content)? {
-                    total_download_size += self.download_children(&child, &children_path, unzip, overwrite)?;
+                    total_download_size += self.download_children(&child, attachment_predicate, &children_path, unzip, overwrite)?;
                 }
                 Ok(total_download_size)
             },
-            _ => Ok(0.0)
+            BBContentHandler::BBPanoptoBCMashup | BBContentHandler::XBBForumlink => {
+                let links_file_path = out_path.join(&format!("{}_links.txt", content.title));
+                let mut links_file = std::fs::File::create(links_file_path)?;
+                links_file.write_all(content.links.join("\n").as_bytes())?;
+                Ok(links_file.metadata()?.len() as f64)
+            },
+            _ => {
+                eprintln!("No defined action for {:?}; skipping download of \"{}\" content.", content.content_handler, content.title);
+                Ok(0.0)
+            }
         }
     }
 
@@ -141,7 +162,7 @@ impl<'a> BBCourse<'a> {
     }
 
     pub fn view_course_content(&self) -> Result<(), Box<dyn std::error::Error>> {
-        eprintln!("Warning: Only displaying files, documents and assignments.");
+        eprintln!("Note: Only displaying files, documents and assignments.");
         for content in self.get_attachable_course_content()? {
             content.view();
         }
@@ -150,7 +171,7 @@ impl<'a> BBCourse<'a> {
 
     // Attachments
     pub fn get_content_attachments(&self, content: &BBContent) -> Result<Vec<BBAttachment>, Box<dyn std::error::Error>> {
-        let attachments_json_filename = format!("{}_attachments.json", valid_dir_name(&content.title));
+        let attachments_json_filename = format!("{}_attachments.json", content.id);
         let attachments_json_path = self.temp_dir.join(&attachments_json_filename);
         self.session.download_content_attachments_json(&self.id, &content.id, &attachments_json_path)?;
         BBAttachment::vec_from_json_results(&attachments_json_path)
@@ -170,12 +191,12 @@ impl<'a> BBCourse<'a> {
         if let Some(attachment_predicate) = attachment_predicate {
             for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
                 let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
-                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&valid_filename(&attachment.filename)), unzip, overwrite)?;
+                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&attachment.filename), unzip, overwrite)?;
             }
         } else {
             for attachment in content_attachments {
                 let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
-                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&valid_filename(&attachment.filename)), unzip, overwrite)?;
+                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&attachment.filename), unzip, overwrite)?;
             }
         }
         Ok(total_download_size)

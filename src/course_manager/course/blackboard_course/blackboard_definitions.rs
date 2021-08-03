@@ -43,17 +43,17 @@ impl BBContentHandler {
             "resource/x-bb-assignment" => BBContentHandler::XBBAssignment,
             "resource/x-bb-folder" => BBContentHandler::XBBFolder,
             "resource/x-bb-forumlink" => BBContentHandler::XBBForumlink,
-            "bb-panopto-bc-mashup" => BBContentHandler::BBPanoptoBCMashup,
+            "resource/bb-panopto-bc-mashup" => BBContentHandler::BBPanoptoBCMashup,
             "resource/x-bb-blti-link" |
             "resource/x-bb-externallink" |
             "resource/x-bb-courselink" |
             "resource/x-bb-asmt-test-link" |
             "resource/x-bb-blankpage" => {
-                eprintln!("Warning: BlackBoard content handler \"{}\" is not yet supported.", content_handler);
+                eprintln!("Note: BlackBoard content handler \"{}\" is not yet supported.", content_handler);
                 BBContentHandler::Unsupported
             },
             _ => {
-                eprintln!("Warning: Unknown BlackBoard content handler \"{}\".", content_handler);
+                eprintln!("Note: Undefined BlackBoard content handler \"{}\".", content_handler);
                 BBContentHandler::Undefined
             },
         }
@@ -64,7 +64,8 @@ impl BBContentHandler {
 pub struct BBContent {
     pub id: String,
     pub title: String,
-    pub content_handler: BBContentHandler, 
+    pub content_handler: BBContentHandler,
+    pub links: Vec<String>, 
 }
 
 impl BBContent {
@@ -74,11 +75,12 @@ impl BBContent {
         let json_string = std::fs::read_to_string(&json_path)?;
         let parsed_json = json::parse(&json_string)?;
 
-        Ok(parsed_json["results"].members().map(|member| {
+        Ok(parsed_json["results"].members().map(|m1| {
             BBContent {
-                id: member["id"].to_string(),
-                title: member["title"].to_string(),
-                content_handler: BBContentHandler::new(&member["contentHandler"]["id"].to_string()),
+                id: m1["id"].to_string(),
+                title: m1["title"].to_string(),
+                content_handler: BBContentHandler::new(&m1["contentHandler"]["id"].to_string()),
+                links: m1["links"].members().map(|m2| m2["href"].to_string()).collect(),
             }
         }).collect())
     }

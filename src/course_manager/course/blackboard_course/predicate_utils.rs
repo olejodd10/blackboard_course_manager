@@ -1,19 +1,22 @@
-pub fn mimetype_match(
-    attachment: &super::blackboard_definitions::BBAttachment, 
-    mimetype: &str
-) -> bool {
+use super::blackboard_definitions::{BBAttachment, BBContent};
+
+pub fn mimetype_match(attachment: &BBAttachment, mimetype: &str) -> bool {
     attachment.mimetype == mimetype
 }
 
+pub fn small_file_mimetype(attachment: &BBAttachment) -> bool {
+    attachment.filename.find("video").is_none()
+}
+
 pub fn filename_substring(
-    attachment: &super::blackboard_definitions::BBAttachment, 
+    attachment: &BBAttachment, 
     filename_substring: &str
 ) -> bool {
     attachment.filename.find(filename_substring).is_some()
 }
 
 pub fn title_substring(
-    content: &super::blackboard_definitions::BBContent, 
+    content: &BBContent, 
     title_substring: &str) -> bool {
     content.title.find(title_substring).is_some()
 }

@@ -13,7 +13,7 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
     eprintln!("Downloading {:?}", out_path);
     
     if out_path.to_str().unwrap().len() > PATH_LENGTH_WARNING_LIMIT {
-        eprintln!("Warning: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
+        eprintln!("WARNING: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
     }
     
     let mut out_file = std::fs::File::create(&out_path).expect("Error creating out_file");
@@ -58,7 +58,7 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
     eprintln!("Downloading and unzipping {:?}", out_path);
 
     if out_path.to_str().unwrap().len() > PATH_LENGTH_WARNING_LIMIT {
-        eprintln!("Warning: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
+        eprintln!("WARNING: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
     }
 
     let mut easy = Easy::new();
