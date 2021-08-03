@@ -3,12 +3,19 @@ use std::io::Write;
 use curl::easy::{Easy, List};
 
 
+const PATH_LENGTH_WARNING_LIMIT: usize = 150;
+
+
 pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
     
     if !overwrite && out_path.exists() { return Ok(0.0); }
 
     eprintln!("Downloading {:?}", out_path);
-
+    
+    if out_path.to_str().unwrap().len() > PATH_LENGTH_WARNING_LIMIT {
+        eprintln!("Warning: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
+    }
+    
     let mut out_file = std::fs::File::create(&out_path).expect("Error creating out_file");
 
     let mut easy = Easy::new();
@@ -49,6 +56,10 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
     }
 
     eprintln!("Downloading and unzipping {:?}", out_path);
+
+    if out_path.to_str().unwrap().len() > PATH_LENGTH_WARNING_LIMIT {
+        eprintln!("Warning: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
+    }
 
     let mut easy = Easy::new();
     easy.url(file_url)?;

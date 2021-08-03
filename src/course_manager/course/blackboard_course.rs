@@ -5,7 +5,7 @@ pub mod blackboard_definitions;
 pub mod predicate_utils;
 pub mod filename_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
-use filename_utils::valid_filename;
+use filename_utils::{valid_dir_name, valid_filename};
 
 pub struct BBCourse<'a> {
     session: &'a blackboard_session::BBSession,
@@ -59,7 +59,7 @@ impl<'a> BBCourse<'a> {
     }
 
     fn get_content_children(&self, content: &BBContent) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let content_children_json_filename = format!("{}_children.json", valid_filename(&content.title));
+        let content_children_json_filename = format!("{}_children.json", valid_dir_name(&content.title));
         let content_children_json_path = self.temp_dir.join(&content_children_json_filename);
         self.session.download_content_children_json(&self.id, &content.id, Some(&[blackboard_session::DEFAULT_FIELDS]), &content_children_json_path)?;
         BBContent::vec_from_json_results(&content_children_json_path)
@@ -78,12 +78,12 @@ impl<'a> BBCourse<'a> {
     fn download_children(&self, content: &BBContent, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
         match content.content_handler {
             BBContentHandler::XBBFile | BBContentHandler::XBBDocument | BBContentHandler::XBBAssignment => {
-                let attachments_path = out_path.join(&valid_filename(&content.title));
+                let attachments_path = out_path.join(&valid_dir_name(&content.title));
                 std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
                 self.download_content_attachments(content, None, &attachments_path, unzip, overwrite) 
             },
             BBContentHandler::XBBFolder => {
-                let children_path = out_path.join(&valid_filename(&content.title));
+                let children_path = out_path.join(&valid_dir_name(&content.title));
                 let mut total_download_size = 0.0;
                 std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
                 for child in self.get_content_children(content)? {
@@ -149,7 +149,7 @@ impl<'a> BBCourse<'a> {
 
     // Attachments
     pub fn get_content_attachments(&self, content: &BBContent) -> Result<Vec<BBAttachment>, Box<dyn std::error::Error>> {
-        let attachments_json_filename = format!("{}_attachments.json", valid_filename(&content.title));
+        let attachments_json_filename = format!("{}_attachments.json", valid_dir_name(&content.title));
         let attachments_json_path = self.temp_dir.join(&attachments_json_filename);
         self.session.download_content_attachments_json(&self.id, &content.id, &attachments_json_path)?;
         BBAttachment::vec_from_json_results(&attachments_json_path)
@@ -169,12 +169,12 @@ impl<'a> BBCourse<'a> {
         if let Some(attachment_predicate) = attachment_predicate {
             for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
                 let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
-                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&attachment.filename), unzip, overwrite)?;
+                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&valid_filename(&attachment.filename)), unzip, overwrite)?;
             }
         } else {
             for attachment in content_attachments {
                 let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
-                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&attachment.filename), unzip, overwrite)?;
+                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&valid_filename(&attachment.filename)), unzip, overwrite)?;
             }
         }
         Ok(total_download_size)

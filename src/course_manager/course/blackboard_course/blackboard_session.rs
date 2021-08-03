@@ -1,7 +1,7 @@
 use crate::download;
 use std::path::{Path, PathBuf};
 
-pub const DEFAULT_FIELDS: &str = "fields=id,title,contentHandler";
+pub const DEFAULT_FIELDS: &str = "fields=id,title,contentHandler,links"; // Looks like all contentHandlers have these fields (not attachments, though).
 
 #[derive(Debug)]
 pub struct BBSession {

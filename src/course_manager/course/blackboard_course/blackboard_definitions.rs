@@ -9,14 +9,30 @@
 
 use std::path::Path;
 
+// https://docs.blackboard.com/learn/rest/advanced/contenthandler-datatypes
 #[derive(Debug)]
 pub enum BBContentHandler {
+    
+    // ContentHandlers with attachments
     XBBFile,
     XBBDocument,
     XBBAssignment,
+    
+    // ContentHandlers with children
     XBBFolder,
+
+    // ContentHandlers with neither children nor attachments
+    XBBForumlink, 
+    XBBCourselink,
+    XBBBLTILink,
+    XBBExternallink,
+
+    BBPanoptoBCMashup, // BBPanoptoBCMashup has a body attribute with an iframe. The same media can be found by following the attached link.  
+
+    XBBBlankpage,
+    
+    Unsupported,
     Undefined,
-    // BBPanoptoBCMashup,
 }
 
 impl BBContentHandler {
@@ -26,8 +42,18 @@ impl BBContentHandler {
             "resource/x-bb-document" => BBContentHandler::XBBDocument,
             "resource/x-bb-assignment" => BBContentHandler::XBBAssignment,
             "resource/x-bb-folder" => BBContentHandler::XBBFolder,
+            "resource/x-bb-forumlink" => BBContentHandler::XBBForumlink,
+            "bb-panopto-bc-mashup" => BBContentHandler::BBPanoptoBCMashup,
+            "resource/x-bb-blti-link" |
+            "resource/x-bb-externallink" |
+            "resource/x-bb-courselink" |
+            "resource/x-bb-asmt-test-link" |
+            "resource/x-bb-blankpage" => {
+                eprintln!("Warning: BlackBoard content handler \"{}\" is not yet supported.", content_handler);
+                BBContentHandler::Unsupported
+            },
             _ => {
-                eprintln!("Warning: Unknown BlackBoard content handler \"{}\"", content_handler);
+                eprintln!("Warning: Unknown BlackBoard content handler \"{}\".", content_handler);
                 BBContentHandler::Undefined
             },
         }
