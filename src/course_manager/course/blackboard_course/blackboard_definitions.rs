@@ -26,6 +26,7 @@ pub enum BBContentHandler {
     XBBCourselink,
     XBBBLTILink,
     XBBExternallink,
+    XBBASMTTestLink,
 
     BBPanoptoBCMashup, // BBPanoptoBCMashup has a body attribute with an iframe. The same media can be found by following the attached link.  
 
@@ -44,11 +45,11 @@ impl BBContentHandler {
             "resource/x-bb-folder" => BBContentHandler::XBBFolder,
             "resource/x-bb-forumlink" => BBContentHandler::XBBForumlink,
             "resource/bb-panopto-bc-mashup" => BBContentHandler::BBPanoptoBCMashup,
+            "resource/x-bb-asmt-test-link" => BBContentHandler::XBBASMTTestLink,
+            "resource/x-bb-blankpage" => BBContentHandler::XBBBlankpage,
             "resource/x-bb-blti-link" |
             "resource/x-bb-externallink" |
-            "resource/x-bb-courselink" |
-            "resource/x-bb-asmt-test-link" |
-            "resource/x-bb-blankpage" => {
+            "resource/x-bb-courselink" => {
                 eprintln!("Note: BlackBoard content handler \"{}\" is not yet supported.", content_handler);
                 BBContentHandler::Unsupported
             },

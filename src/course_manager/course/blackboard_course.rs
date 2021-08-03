@@ -110,7 +110,8 @@ impl<'a> BBCourse<'a> {
                 }
                 Ok(total_download_size)
             },
-            BBContentHandler::BBPanoptoBCMashup | BBContentHandler::XBBForumlink => {
+            BBContentHandler::BBPanoptoBCMashup | BBContentHandler::XBBForumlink | 
+            BBContentHandler::XBBASMTTestLink | BBContentHandler::XBBBlankpage => {
                 if !content.links.is_empty() {
                     let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&content.title)));
                     self.create_links_file(content, &links_file_path)

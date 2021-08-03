@@ -19,6 +19,11 @@ impl CourseManager {
         }
     }
 
+    fn initiate_bb_session(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        unimplemented!();
+        Ok(())
+    }
+
     fn add_course(&mut self, course: Box<dyn Course>) {
         self.courses.push(course);
     }
@@ -43,8 +48,4 @@ impl CourseManager {
         unimplemented!();
     }
 
-    fn start_bb_session(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        unimplemented!();
-        Ok(())
-    }
 }
