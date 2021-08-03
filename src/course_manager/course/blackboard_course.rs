@@ -132,7 +132,7 @@ impl<'a> BBCourse<'a> {
         BBContent::vec_from_json_results(&assignments_json_path)
     }
 
-    pub fn get_course_content(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
+    pub fn get_attachable_course_content(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
         let mut course_contents = Vec::new();
         course_contents.append(&mut self.get_course_files()?);
         course_contents.append(&mut self.get_course_documents()?);
@@ -141,7 +141,8 @@ impl<'a> BBCourse<'a> {
     }
 
     pub fn view_course_content(&self) -> Result<(), Box<dyn std::error::Error>> {
-        for content in self.get_course_content()? {
+        eprintln!("Warning: Only displaying files, documents and assignments.");
+        for content in self.get_attachable_course_content()? {
             content.view();
         }
         Ok(())
@@ -188,14 +189,14 @@ impl<'a> BBCourse<'a> {
         unzip: bool,
         overwrite: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
-        let course_content = self.get_course_content()?;
+        let attachable_course_content = self.get_attachable_course_content()?;
         let mut total_download_size = 0.0;
         if let Some(content_predicate) = content_predicate {
-            for content in course_content.into_iter().filter(|content| content_predicate(content)) {
+            for content in attachable_course_content.into_iter().filter(|content| content_predicate(content)) {
                 total_download_size += self.download_content_attachments(&content, attachment_predicate, &self.files_dir, unzip, overwrite)?;
             }
         } else {
-            for content in course_content {
+            for content in attachable_course_content {
                 total_download_size += self.download_content_attachments(&content, attachment_predicate, &self.files_dir, unzip, overwrite)?;
             }
         }
