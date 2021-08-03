@@ -5,7 +5,7 @@ pub fn mimetype_match(attachment: &BBAttachment, mimetype: &str) -> bool {
 }
 
 pub fn small_file_mimetype(attachment: &BBAttachment) -> bool {
-    attachment.filename.find("video").is_none()
+    attachment.mimetype.find("video").is_none()
 }
 
 pub fn filename_substring(

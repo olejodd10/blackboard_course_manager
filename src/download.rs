@@ -16,7 +16,7 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
         eprintln!("WARNING: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
     }
     
-    let mut out_file = std::fs::File::create(&out_path).expect("Error creating out_file");
+    let mut out_file = std::fs::File::create(&out_path).expect("Error creating out file");
 
     let mut easy = Easy::new();
     easy.url(file_url)?;

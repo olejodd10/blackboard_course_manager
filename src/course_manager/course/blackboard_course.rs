@@ -6,7 +6,7 @@ pub mod blackboard_definitions;
 pub mod predicate_utils;
 pub mod filename_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
-use filename_utils::valid_dir_name;
+use filename_utils::{valid_dir_name, valid_filename};
 
 pub struct BBCourse<'a> {
     session: &'a blackboard_session::BBSession,
@@ -68,6 +68,7 @@ impl<'a> BBCourse<'a> {
 
     pub fn download_course_content_tree(
         &self, 
+        content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>, 
         attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
         unzip: bool, 
         overwrite: bool
@@ -75,7 +76,7 @@ impl<'a> BBCourse<'a> {
         let mut total_download_size = 0.0;
         // std::fs::create_dir_all(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
         for content in self.get_course_root_content()? {
-            total_download_size += self.download_children(&content, attachment_predicate, &self.tree_dir, unzip, overwrite)?;
+            total_download_size += self.download_children(&content, content_predicate, attachment_predicate, &self.tree_dir, unzip, overwrite)?;
         }
         eprintln!("Content tree download completed. Total download size: {} bytes.", total_download_size);
         Ok(total_download_size)
@@ -83,11 +84,17 @@ impl<'a> BBCourse<'a> {
 
     fn download_children(&self, 
         content: &BBContent, 
+        content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>, 
         attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path, 
         unzip: bool, 
         overwrite: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
+        if let Some(content_predicate) = content_predicate {
+            if !content_predicate(content) {
+                return Ok(0.0);
+            }
+        }
         match content.content_handler {
             BBContentHandler::XBBFile | BBContentHandler::XBBDocument | BBContentHandler::XBBAssignment => {
                 let attachments_path = out_path.join(&valid_dir_name(&content.title));
@@ -99,21 +106,31 @@ impl<'a> BBCourse<'a> {
                 let mut total_download_size = 0.0;
                 std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
                 for child in self.get_content_children(content)? {
-                    total_download_size += self.download_children(&child, attachment_predicate, &children_path, unzip, overwrite)?;
+                    total_download_size += self.download_children(&child, content_predicate, attachment_predicate, &children_path, unzip, overwrite)?;
                 }
                 Ok(total_download_size)
             },
             BBContentHandler::BBPanoptoBCMashup | BBContentHandler::XBBForumlink => {
-                let links_file_path = out_path.join(&format!("{}_links.txt", content.title));
-                let mut links_file = std::fs::File::create(links_file_path)?;
-                links_file.write_all(content.links.join("\n").as_bytes())?;
-                Ok(links_file.metadata()?.len() as f64)
+                if !content.links.is_empty() {
+                    let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&content.title)));
+                    self.create_links_file(content, &links_file_path)
+                } else {
+                    Ok(0.0)
+                }
             },
             _ => {
                 eprintln!("No defined action for {:?}; skipping download of \"{}\" content.", content.content_handler, content.title);
                 Ok(0.0)
             }
         }
+    }
+
+    fn create_links_file(&self, content: &BBContent, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+        let mut links_file = std::fs::File::create(out_path).expect("Error creating links file");
+        for link in &content.links {
+            writeln!(links_file, "https://{}{}", self.session.domain, link).unwrap();
+        }
+        Ok(links_file.metadata()?.len() as f64)
     }
 
     //Announcements
@@ -191,12 +208,12 @@ impl<'a> BBCourse<'a> {
         if let Some(attachment_predicate) = attachment_predicate {
             for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
                 let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
-                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&attachment.filename), unzip, overwrite)?;
+                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&valid_filename(&attachment.filename)), unzip, overwrite)?;
             }
         } else {
             for attachment in content_attachments {
                 let unzip = unzip && attachment.is_zip(); // Only unzip if unzip flag set, and file is zipped
-                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&attachment.filename), unzip, overwrite)?;
+                total_download_size += self.session.download_content_attachment(&self.id, &content.id, &attachment.id, &out_path.join(&valid_filename(&attachment.filename)), unzip, overwrite)?;
             }
         }
         Ok(total_download_size)

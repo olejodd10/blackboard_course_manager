@@ -70,21 +70,21 @@ fn cpp_test() {
         "_22729_1"
     );
 
-    cpp.download_course_content_attachments(
-        Some(&(
-            |content| {
-            course::blackboard_course::predicate_utils::title_substring(
-                content, 
-                "Øvingstekst")
-            }
-        )), 
-        None,
-        true,
-        false
-    )
-    .unwrap();
+    // cpp.download_course_content_attachments(
+    //     Some(&(
+    //         |content| {
+    //         course::blackboard_course::predicate_utils::title_substring(
+    //             content, 
+    //             "Øvingstekst")
+    //         }
+    //     )), 
+    //     None,
+    //     true,
+    //     false
+    // )
+    // .unwrap();
 
-    cpp.download_course_content_tree(Some(&small_file_mimetype), false, false).unwrap();
+    cpp.download_course_content_tree(None, Some(&small_file_mimetype), false, false).unwrap();
 }
 
 #[test]
@@ -140,7 +140,7 @@ fn regtek_test() {
     )
     .unwrap();
 
-    let downloaded_amount = regtek.download_course_content_tree(Some(&small_file_mimetype), false, false).unwrap();    
+    regtek.download_course_content_tree(None, Some(&small_file_mimetype), false, false).unwrap();    
 }
 
 
@@ -163,21 +163,21 @@ fn tilpdat_test() {
     
     tilpdat.view_course_content().unwrap();
 
-    tilpdat.download_course_content_attachments(
-        Some(&(
-            |content| {
-            course::blackboard_course::predicate_utils::title_substring(
-                content, 
-                "Øving")
-            }
-        )), 
-        None,
-        false,
-        true
-    )
-    .unwrap();
+    // tilpdat.download_course_content_attachments(
+    //     Some(&(
+    //         |content| {
+    //         course::blackboard_course::predicate_utils::title_substring(
+    //             content, 
+    //             "Øving")
+    //         }
+    //     )), 
+    //     None,
+    //     false,
+    //     true
+    // )
+    // .unwrap();
 
-    let downloaded_amount = tilpdat.download_course_content_tree(Some(&small_file_mimetype), false, false).unwrap();    
+    tilpdat.download_course_content_tree(None, Some(&small_file_mimetype), false, true).unwrap();    
 }
 
 #[test]
