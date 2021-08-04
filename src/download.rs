@@ -8,7 +8,10 @@ const PATH_LENGTH_WARNING_LIMIT: usize = 230;
 
 pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
     
-    if !overwrite && out_path.exists() { return Ok(0.0); }
+    if !overwrite && out_path.exists() { 
+        eprintln!("File already exists; skipping download.");
+        return Ok(0.0); 
+    }
 
     // eprintln!("Downloading {:?}", out_path);
     
@@ -52,6 +55,7 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&st
     
     if out_dir.exists() {
         if !overwrite {
+            eprintln!("Directory already exists; skipping unzip.");
             return Ok(download_size);
         } else {
             std::fs::remove_dir_all(&out_dir)?;
