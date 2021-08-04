@@ -85,6 +85,7 @@ impl BBSession {
     }
 
     pub fn download_content_attachment(&self, course_id: &str, content_id: &str, attachment_id: &str, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+        eprintln!("Downloading attachment {:?}", out_path);
 
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
             self.domain,

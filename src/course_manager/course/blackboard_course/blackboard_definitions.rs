@@ -120,6 +120,10 @@ impl BBAttachment {
     pub fn is_zip(&self) -> bool {
         self.mimetype == "application/zip"
     }
+
+    pub fn view(&self) {
+        println!("FILENAME: {}\nMIMETYPE: {}\n", self.filename, self.mimetype)
+    }
 }
 
 

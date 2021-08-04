@@ -20,6 +20,13 @@ impl CourseManager {
     }
 
     fn initiate_bb_session(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // https://tech.saigonist.com/b/code/how-login-any-website-using-curl-command-line-or-shell-script.html
+        
+        
+        //http://innsida.ntnu.no/blackboard
+        // https://idp.feide.no/simplesaml/module.php/feide/login?org=ntnu.no&AuthState=_2b5f061e41d8bc488329885f23b46a3c57a2550dcf%3Ahttps%3A%2F%2Fidp.feide.no%2Fsimplesaml%2Fsaml2%2Fidp%2FSSOService.php%3Fspentityid%3Dhttp%253A%252F%252Fadfs.ntnu.no%252Fadfs%252Fservices%252Ftrust%26RelayState%3D71d64f68-ca97-4120-a164-cb6b2e4a0bc3%26cookieTime%3D1628027373
+        
+        
         unimplemented!();
         Ok(())
     }

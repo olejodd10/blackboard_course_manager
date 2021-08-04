@@ -26,19 +26,21 @@ fn safe_truncate(s: &mut String, new_len: usize) {
 }
 
 pub fn valid_dir_name(s: &str) -> String {
-    let mut s = s.replace(&BANNED_DIR_NAME_CHARS[..], "_");
-    safe_truncate(&mut s, ALLOWED_NAME_LENGTH);
-    s
+    // let mut s = s.replace(&BANNED_DIR_NAME_CHARS[..], "_");
+    // safe_truncate(&mut s, ALLOWED_NAME_LENGTH);
+    // s
+    s.replace(&BANNED_DIR_NAME_CHARS[..], "_")
 }
 
 pub fn valid_filename(s: &str) -> String {
-    let mut splits_rev = s.split('.').rev();
-    let extension = splits_rev.next().unwrap();
-    let mut filename = splits_rev.rev().collect::<Vec<&str>>().join("_").replace(&BANNED_FILENAME_CHARS[..], "x");
-    safe_truncate(&mut filename, ALLOWED_NAME_LENGTH-extension.len()-1); // Leave space for ".pdf", for example
-    filename.push('.');
-    filename.push_str(&extension);
-    filename
+    // let mut splits_rev = s.split('.').rev();
+    // let extension = splits_rev.next().unwrap();
+    // let mut filename = splits_rev.rev().collect::<Vec<&str>>().join("_").replace(&BANNED_FILENAME_CHARS[..], "x");
+    // safe_truncate(&mut filename, ALLOWED_NAME_LENGTH-extension.len()-1); // Leave space for ".pdf", for example
+    // filename.push('.');
+    // filename.push_str(&extension);
+    // filename
+    s.replace(&BANNED_FILENAME_CHARS[..], "_")
 }
 
 // fjerne unødvendige deler av filnavnet. For eksempel er fagkoden alltid overflødig

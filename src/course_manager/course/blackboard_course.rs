@@ -178,11 +178,33 @@ impl<'a> BBCourse<'a> {
         course_contents.append(&mut self.get_course_assignments()?);
         Ok(course_contents)
     }
-
-    pub fn view_course_content(&self) -> Result<(), Box<dyn std::error::Error>> {
+ 
+    pub fn view_course_content(&self, content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("Note: Only displaying files, documents and assignments.");
-        for content in self.get_attachable_course_content()? {
-            content.view();
+        if let Some(content_predicate) = content_predicate {
+            for content in self.get_attachable_course_content()?.iter().filter(|content| content_predicate(content)) {
+                content.view();
+            }
+        } else {
+            for content in self.get_attachable_course_content()? {
+                content.view();
+            }
+        }
+        Ok(())
+    }
+
+    pub fn view_course_attachments(&self, attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
+        let course_attachments = self.get_attachable_course_content()?.into_iter()
+            .map(|content| self.get_content_attachments(&content).expect("Error getting content attachments").into_iter())
+            .flatten();
+        if let Some(attachment_predicate) = attachment_predicate {
+            for attachment in course_attachments.filter(|attachment| attachment_predicate(attachment)) {
+                attachment.view();
+            }
+        } else {
+            for attachment in course_attachments {
+                attachment.view();
+            }
         }
         Ok(())
     }
@@ -258,7 +280,7 @@ impl<'a> super::Course for BBCourse<'a> {
     }
 
     fn get_semester(&self) -> &str {
-        &self.get_semester()
+        &self.semester
     }
 }
 
