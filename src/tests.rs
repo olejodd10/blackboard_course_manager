@@ -8,7 +8,7 @@ use course::blackboard_course::predicate_utils::filename_substring;
 use course::blackboard_course::predicate_utils::title_substring;
 
 
-const COOKIE_HEADER: &str = "Cookie: JSESSIONID=171E8E4AF2DD7FE8AA7AEECF69DACA7A; _ga=GA1.2.1751170615.1627655908; OptanonConsent=isIABGlobal=false&datestamp=Sat+Jul+31+2021+13%3A49%3A37+GMT%2B0200+(Central+European+Summer+Time)&version=6.19.0&hosts=&consentId=5cb83fef-82ce-4462-967a-5141a08ed4a3&interactionCount=1&landingPath=NotLandingPage&groups=C0002%3A1%2CC0005%3A1%2CC0004%3A1%2CC0003%3A1%2CC0001%3A1&AwaitingReconsent=false; _gcl_au=1.1.312523879.1627660164; tc_ptidexpiry=1690732164415; tc_ptid=5zrWjwTY6IVjTm4uTjpxgp; _fbp=fb.1.1627660165377.42280692; nmstat=187f3168-e1dc-65d1-0ae2-ec874bbfbb4e; vid=e0ee7884-2782-4369-a161-a47944cd6102; _pf_id.55ea=e0ee7884-2782-4369-a161-a47944cd6102.1627660167.3.1627667840.1627665315.b6f462a9-2b98-4b7c-bd81-c416940b25b7; __ssds=2; __ssuzjsr2=a9be0cd8e; __uzmaj2=40bd6587-be37-41fc-a21a-64037592a39a; __uzmbj2=1627660167; __uzmcj2=187351623509; __uzmdj2=1627661664; BbRouter=expires:1628099814,id:D01463F0EBF06822A5A72ABEE2769801,signature:fa06aad020a3219459a141a7d2e99c90f4c4986558f3e03007bfb3130784fc97,site:f4fe20be-98b0-4ecd-9039-d18ce2989292,timeout:10800,user:6375ce98b45a407e99ff9519c9064ad3,v:2,xsrf:2ac1e8ba-ce10-4862-a064-11ae8d078729; BbClientCalenderTimeZone=Europe/Oslo; web_client_cache_guid=3f9f1ffd-8ef6-43ef-98fd-4d8aa8ae5a5f; xythosdrive=0; JSESSIONID=66D9404E1ACE21C34CFE5684A8F194AC; _gid=GA1.2.200852753.1628008692; AWSELB=0733E7E906D5AD63F9AA1C42FA3A042BA8E680ECF5609585E395157E0262F35B86C08B940BF948A15F7AE8CDEE8AF9D7103CEC1E70A6C5CAC71F0466FC1E2D55D1C7DA7865";
+const COOKIE_FILE_PATH: &str = "cookies_test.txt";
 
 #[test]
 fn wiki_course_test() {
@@ -28,7 +28,7 @@ fn wiki_course_test() {
 fn regtek_appointments_test() {
     let session = BBSession {
         domain: "ntnu.blackboard.com".to_string(),
-        cookie_header: COOKIE_HEADER.to_string()
+        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
     };
 
     let regtek = BBCourse::new(
@@ -61,7 +61,7 @@ fn cpp_test() {
 
     let session = BBSession {
         domain: "ntnu.blackboard.com".to_string(),
-        cookie_header: COOKIE_HEADER.to_string()
+        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
     };
     let cpp = BBCourse::new(
         &session,
@@ -93,7 +93,7 @@ fn cpp_test() {
 fn bb_course_announcements_test() {
     let session = BBSession {
         domain: "ntnu.blackboard.com".to_string(),
-        cookie_header: COOKIE_HEADER.to_string()
+        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
     };
     let regtek = BBCourse::new(
         &session,
@@ -112,7 +112,7 @@ fn bb_course_announcements_test() {
 fn regtek_test() {
     let session = BBSession {
         domain: "ntnu.blackboard.com".to_string(),
-        cookie_header: COOKIE_HEADER.to_string()
+        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
     };
     let regtek = BBCourse::new(
         &session,
@@ -150,7 +150,7 @@ fn regtek_test() {
 fn tilpdat_test() {
     let session = BBSession {
         domain: "ntnu.blackboard.com".to_string(),
-        cookie_header: COOKIE_HEADER.to_string()
+        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
     };
     let tilpdat = BBCourse::new(
         &session,
@@ -188,7 +188,7 @@ fn tilpdat_test() {
 fn test_long_filenames() {
     let session = BBSession {
         domain: "ntnu.blackboard.com".to_string(),
-        cookie_header: COOKIE_HEADER.to_string()
+        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
     };
     // https://ntnu.blackboard.com/learn/api/public/v1/courses/_24810_1/contents/_1245662_1/attachments/_3062124_1/download
     session.download_content_attachment(
@@ -204,3 +204,11 @@ fn test_long_filenames() {
 }
 
 
+#[test]
+fn test_bb_session_initiate() {
+    use std::io::Write;
+    use curl::easy::Easy;
+    let session = BBSession::initiate_bb_session("ntnu.blackboard.com",Path::new(COOKIE_FILE_PATH)).unwrap();
+    
+    session.download_course_announcements_json("_24810_1", 3, 0, Path::new("HALLO.txt")).unwrap();
+}

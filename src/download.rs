@@ -6,7 +6,7 @@ use curl::easy::{Easy, List};
 const PATH_LENGTH_WARNING_LIMIT: usize = 230;
 
 
-pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+pub fn download_file(file_url: &str, out_path: &Path, cookie_file_path: Option<&Path>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
     
     if !overwrite && out_path.exists() { 
         eprintln!("File already exists; skipping download.");
@@ -30,12 +30,8 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
         Ok(data.len())
     })?;
 
-    if let Some(headers) = headers {
-        let mut list = List::new();
-        for header in headers {
-            list.append(header).unwrap();
-        }
-        easy.http_headers(list).unwrap();
+    if let Some(cookie_file_path) = cookie_file_path {
+        easy.cookie_file(cookie_file_path).unwrap();
     }
 
     easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
@@ -47,9 +43,9 @@ pub fn download_file(file_url: &str, out_path: &Path, headers: Option<&[&str]>, 
 }
 
 
-pub fn download_and_unzip(file_url: &str, out_path: &Path, headers: Option<&[&str]>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+pub fn download_and_unzip(file_url: &str, out_path: &Path, cookie_file_path: Option<&Path>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
 
-    let download_size = download_file(file_url, out_path, headers, overwrite)?;
+    let download_size = download_file(file_url, out_path, cookie_file_path, overwrite)?;
 
     let out_dir = PathBuf::from(out_path.with_extension("")); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
     
