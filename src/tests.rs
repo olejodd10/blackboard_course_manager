@@ -6,9 +6,10 @@ use course::blackboard_course::blackboard_session::BBSession;
 use course::blackboard_course::predicate_utils::small_file_mimetype;
 use course::blackboard_course::predicate_utils::filename_substring;
 use course::blackboard_course::predicate_utils::title_substring;
+use super::course_manager::CourseManager;
 
 
-const COOKIE_FILE_PATH: &str = "cookies_test.txt";
+const COOKIE_JAR_DIR: &str = "./cookies";
 
 #[test]
 fn wiki_course_test() {
@@ -26,13 +27,10 @@ fn wiki_course_test() {
 
 #[test]
 fn regtek_appointments_test() {
-    let session = BBSession {
-        domain: "ntnu.blackboard.com".to_string(),
-        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
-    };
+    let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
 
     let regtek = BBCourse::new(
-        &session,
+        session,
         "TTK4105",
         "V21",
         "regtek",
@@ -58,13 +56,9 @@ fn regtek_appointments_test() {
 
 #[test]
 fn cpp_test() {
-
-    let session = BBSession {
-        domain: "ntnu.blackboard.com".to_string(),
-        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
-    };
+    let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
     let cpp = BBCourse::new(
-        &session,
+        session,
         "TDT4102",
         "V21",
         "cpp",
@@ -91,12 +85,9 @@ fn cpp_test() {
 
 #[test]
 fn bb_course_announcements_test() {
-    let session = BBSession {
-        domain: "ntnu.blackboard.com".to_string(),
-        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
-    };
+    let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
     let regtek = BBCourse::new(
-        &session,
+        session,
         "TTK4105",
         "V21",
         "regtek",
@@ -110,12 +101,9 @@ fn bb_course_announcements_test() {
 
 #[test]
 fn regtek_test() {
-    let session = BBSession {
-        domain: "ntnu.blackboard.com".to_string(),
-        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
-    };
+    let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
     let regtek = BBCourse::new(
-        &session,
+        session,
         "TTK4105",
         "V21",
         "regtek",
@@ -148,12 +136,9 @@ fn regtek_test() {
 
 #[test]
 fn tilpdat_test() {
-    let session = BBSession {
-        domain: "ntnu.blackboard.com".to_string(),
-        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
-    };
+    let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
     let tilpdat = BBCourse::new(
-        &session,
+        session,
         "TTK4235",
         "V21",
         "tilpdat",
@@ -186,10 +171,7 @@ fn tilpdat_test() {
 
 #[test]
 fn test_long_filenames() {
-    let session = BBSession {
-        domain: "ntnu.blackboard.com".to_string(),
-        cookie_jar_path: PathBuf::from(COOKIE_FILE_PATH)
-    };
+    let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
     // https://ntnu.blackboard.com/learn/api/public/v1/courses/_24810_1/contents/_1245662_1/attachments/_3062124_1/download
     session.download_content_attachment(
         "_24810_1", 
@@ -208,7 +190,19 @@ fn test_long_filenames() {
 fn test_bb_session_initiate() {
     use std::io::Write;
     use curl::easy::Easy;
-    let session = BBSession::initiate_bb_session("ntnu.blackboard.com",Path::new(COOKIE_FILE_PATH)).unwrap();
-    
+    let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
     session.download_course_announcements_json("_24810_1", 3, 0, Path::new("HALLO.txt")).unwrap();
+}
+
+#[test]
+fn test_register_course() {
+    use std::io::Write;
+    use curl::easy::Easy;
+    let mut course_manager = CourseManager::new(
+        Path::new("./output"),
+        Path::new("./work"),
+    );
+
+    course_manager.register_course();
+    course_manager.print_courses();
 }

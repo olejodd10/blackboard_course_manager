@@ -8,12 +8,12 @@ pub mod filename_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
 use filename_utils::{valid_dir_name, valid_filename};
 
-pub struct BBCourse<'a> {
-    session: &'a blackboard_session::BBSession,
+pub struct BBCourse {
+    session: blackboard_session::BBSession,
     course_code: String,
     semester: String,
     alias: String,
-    // base_dir: PathBuf,
+    // out_dir: PathBuf,
     files_dir: PathBuf,
     temp_dir: PathBuf,
     tree_dir: PathBuf,
@@ -21,19 +21,19 @@ pub struct BBCourse<'a> {
 }
 
 
-impl<'a> BBCourse<'a> {
+impl BBCourse {
     pub fn new(
-            session: &'a blackboard_session::BBSession,
-            course_code: &str,
-            semester: &str,
-            alias: &str,
-            base_dir: &Path,
-            id: &str
-    ) -> BBCourse<'a> {
-        let files_dir = base_dir.join("downloaded_files");
-        let temp_dir = base_dir.join("temp");
-        let tree_dir = base_dir.join("content_tree");
-        std::fs::create_dir_all(&base_dir).expect("Error creating base folder");
+        session: blackboard_session::BBSession,
+        course_code: &str,
+        semester: &str,
+        alias: &str,
+        out_dir: &Path,
+        id: &str
+    ) -> BBCourse {
+        let files_dir = out_dir.join("downloaded_files");
+        let temp_dir = out_dir.join("temp");
+        let tree_dir = out_dir.join("content_tree");
+        std::fs::create_dir_all(&out_dir).expect("Error creating base folder");
         std::fs::create_dir_all(&files_dir).expect("Error creating files folder"); 
         std::fs::create_dir_all(&temp_dir).expect("Error creating temp folder");
         std::fs::create_dir_all(&tree_dir).expect("Error creating tree folder");
@@ -42,7 +42,7 @@ impl<'a> BBCourse<'a> {
             course_code: course_code.to_string(),
             semester: semester.to_string(),
             alias: alias.to_string(),
-            // base_dir,
+            // out_dir,
             files_dir,
             temp_dir,
             tree_dir,
@@ -266,7 +266,7 @@ impl<'a> BBCourse<'a> {
 
 }
 
-impl<'a> super::Course for BBCourse<'a> {
+impl super::Course for BBCourse {
     fn get_alias(&self) -> &str {
         &self.alias
     }
@@ -284,7 +284,7 @@ impl<'a> super::Course for BBCourse<'a> {
     }
 }
 
-impl<'a> Drop for BBCourse<'a> {
+impl Drop for BBCourse {
     fn drop(&mut self) {
         std::fs::remove_dir_all(&self.temp_dir).expect("Error deleting temp_dir");
     }

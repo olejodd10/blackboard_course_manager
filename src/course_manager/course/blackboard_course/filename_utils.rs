@@ -43,6 +43,10 @@ pub fn valid_filename(s: &str) -> String {
     s.replace(&BANNED_FILENAME_CHARS[..], "_")
 }
 
+pub fn cookie_filename(domain: &str) -> String {
+    [&domain.replace(".", "_"), ".txt"].join("")
+}
+
 // fjerne unødvendige deler av filnavnet. For eksempel er fagkoden alltid overflødig
 //pub fn simplify_name(&str) -> String {
 

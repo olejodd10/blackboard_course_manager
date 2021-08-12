@@ -1,8 +1,10 @@
 use crate::download;
 use std::path::{Path, PathBuf};
 use std::io::{Read, Write, BufWriter, BufRead};
+use super::filename_utils::cookie_filename;
+use crate::course_manager::input_utils::stdin_trimmed_line;
 
-use curl::easy::{Easy2, Handler, WriteError};
+use curl::easy::{Easy2, Easy, Handler, WriteError};
 
 // https://docs.rs/curl/0.4.38/curl/easy/trait.Handler.html
 struct Collector(Vec<u8>);
@@ -20,48 +22,103 @@ const SYNC_CHANNEL_BUFFER_SIZE: usize = 1000000;
 #[derive(Debug)]
 pub struct BBSession {
     pub domain: String,
+    pub cookie_jar_dir: PathBuf,
     pub cookie_jar_path: PathBuf,
 }
 
 impl BBSession {
-    pub fn initiate_bb_session(domain: &str, cookie_jar_path: &Path) -> Result<BBSession, Box<dyn std::error::Error>> {
-        // https://tech.saigonist.com/b/code/how-login-any-website-using-curl-command-line-or-shell-script.html
-        
-        eprintln!("Not checking for existing sessions.");
+    pub fn new(domain: &str, cookie_jar_dir: &Path) -> Result<BBSession, Box<dyn std::error::Error>> {
+        std::fs::create_dir_all(cookie_jar_dir).expect("Error creating BBSession cookie_jar_dir");
+        match BBSession::load_session(domain, cookie_jar_dir) {
+            Ok(session) => Ok(session),
+            _ => BBSession::initiate_bb_session(domain, cookie_jar_dir),
+        }
+    }
 
-        let mut easy = Easy2::new(Collector(Vec::new()));
-        easy.cookie_jar(cookie_jar_path)?;
-        easy.cookie_file(cookie_jar_path)?;
-        easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
-        easy.fail_on_error(true)?; //Viktig for å faile på 401
-        
-        easy.url("https://ntnu.blackboard.com/ultra")?;
-        easy.perform()?; //Husk at denne er synchronous derfor er det trygt å aksessere mutexen under.
+    fn load_session(domain: &str, cookie_jar_dir: &Path) -> Result<BBSession, Box<dyn std::error::Error>> {
+        eprintln!("Attempting to find existing BlackBoard session.");
 
-        let content = String::from_utf8(easy.get_ref().0.clone()).expect("Error converting content to String");
-        let document = scraper::Html::parse_document(&content);
-        let nonce_selector = scraper::Selector::parse(r#"input[name="blackboard.platform.security.NonceUtil.nonce"]"#).expect("Error parsing selector");
+        let cookie_jar_path = cookie_jar_dir.join(cookie_filename(domain));
+        if cookie_jar_path.exists() {
+            let bb_session = BBSession {
+                domain: domain.to_string(),
+                cookie_jar_dir: cookie_jar_dir.to_path_buf(),
+                cookie_jar_path,
+            };
+            if bb_session.test_connection() {
+                Ok(bb_session)
+            } else {
+                Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Loaded session connection test failed")))
+            }
+        } else {
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "No cookie file exists")))
+        }
+    }
 
-        let nonce = document.select(&nonce_selector).next().expect("No elements matching selector").value().attr("value").expect("Error getting attribute");
+    fn initiate_bb_session(domain: &str, cookie_jar_dir: &Path) -> Result<BBSession, Box<dyn std::error::Error>> {
+        eprintln!("Initiating new BlackBoard session.");
+        eprintln!("{}, {:?}", domain, cookie_jar_dir);
 
-        let stdin = std::io::stdin();
-        let mut lines = stdin.lock().lines().flatten();
-        println!("Please enter user_id:");
-        let user_id = lines.next().unwrap();
-        println!("Please enter password:");
-        let password = lines.next().unwrap();
-        
-        let login_form_data = format!("user_id={}&password={}&blackboard.platform.security.NonceUtil.nonce={}", user_id, password, nonce);
-        
-        easy.url("https://ntnu.blackboard.com/webapps/login/")?;
-        easy.post(true)?; // Kanskje unødvendig
-        easy.post_fields_copy(login_form_data.as_bytes())?; 
-        easy.perform()?; //Husk at denne er synchronous!
+        std::fs::create_dir_all(cookie_jar_dir)?;
+        let cookie_jar_path = cookie_jar_dir.join(cookie_filename(domain));
+        if cookie_jar_path.exists() {
+            std::fs::remove_file(&cookie_jar_path)?; // ~
+        }
 
-        Ok(BBSession {
+        //Block to force cookie file write before connection test
+        {
+            let mut easy = Easy2::new(Collector(Vec::new()));
+            easy.cookie_jar(&cookie_jar_path)?;
+            easy.cookie_file(&cookie_jar_path)?;
+            easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
+            easy.fail_on_error(true)?; //Viktig for å faile på 401
+            
+            
+            easy.url(&format!("https://{}/ultra", domain))?;
+            easy.perform()?; //Husk at denne er synchronous derfor er det trygt å aksessere mutexen under.
+            
+            let content = String::from_utf8(easy.get_ref().0.clone()).expect("Error converting content to String");
+            let document = scraper::Html::parse_document(&content);
+            let nonce_selector = scraper::Selector::parse(r#"input[name="blackboard.platform.security.NonceUtil.nonce"]"#).expect("Error parsing selector");
+    
+            let nonce = document.select(&nonce_selector).next().expect("No elements matching selector").value().attr("value").expect("Error getting attribute");
+    
+            println!("Please enter user_id:");
+            let user_id = stdin_trimmed_line();
+            println!("Please enter password:");
+            let password = stdin_trimmed_line();
+            
+            let login_form_data = format!("user_id={}&password={}&blackboard.platform.security.NonceUtil.nonce={}", user_id, password, nonce);
+            
+            easy.url(&format!("https://{}/webapps/login/", domain))?;
+            easy.post(true)?; // Kanskje unødvendig
+            easy.post_fields_copy(login_form_data.as_bytes())?; 
+            easy.perform()?; //Husk at denne er synchronous!
+        }
+
+        let bb_session = BBSession {
             domain: domain.to_string(),
-            cookie_jar_path: cookie_jar_path.to_path_buf(),
-        })
+            cookie_jar_dir: cookie_jar_dir.to_path_buf(),
+            cookie_jar_path,
+        };
+        
+        if bb_session.test_connection() {
+            Ok(bb_session)
+        } else {
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Initiated session connection test failed")))
+        }
+    }
+
+    fn test_connection(&self) -> bool {
+        let mut easy = Easy::new();
+        easy.url(&format!("https://{}/learn/api/public/v1/courses/_24810_1/contents", self.domain)).unwrap();
+        easy.cookie_file(&self.cookie_jar_path).unwrap();
+        easy.fail_on_error(true).unwrap();
+        if let Ok(_) = easy.perform() {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn download_file(&self, url: &str, out_path: &Path, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
