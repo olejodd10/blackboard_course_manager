@@ -80,6 +80,10 @@ impl BBCourseManager {
         }
     }
 
+    pub fn remove_all_courses(&mut self) {
+        self.courses.clear();
+    }
+
     fn get_course(&self, alias: &str) -> Option<&BBCourse> {
         match self.courses.get(alias) {
             None => {

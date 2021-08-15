@@ -21,6 +21,9 @@ enum Bcm {
         course_alias: String,
     },
 
+    #[structopt(about="Remove all registered courses")]
+    Reset,
+
     #[structopt(about="View registered courses")]
     Courses,
 
@@ -199,6 +202,10 @@ fn main() {
         } => {
             course_manager.remove_course(&course_alias);
         },
+
+        Bcm::Reset => {
+            course_manager.remove_all_courses();
+        }
 
         Bcm::Courses => {
             course_manager.print_courses();
