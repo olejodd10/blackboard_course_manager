@@ -1,6 +1,6 @@
 # BlackBoard Course Manager
 
-A tool to manage BlackBoard courses.
+A command line tool to manage BlackBoard courses.
 
 ## Setup
 
