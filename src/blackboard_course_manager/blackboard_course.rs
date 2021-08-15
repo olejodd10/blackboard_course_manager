@@ -152,8 +152,13 @@ impl BBCourse {
     }
     
     pub fn view_course_announcements(&self, limit: Option<usize>, offset: Option<usize>) -> Result<(), Box<dyn std::error::Error>> {
-        for announcement in self.get_course_announcements(limit, offset)? {
-            announcement.view();
+        let announcements = self.get_course_announcements(limit, offset)?;
+        if announcements.is_empty() {
+            println!("No announcements found.")
+        } else {
+            for announcement in self.get_course_announcements(limit, offset)? {
+                announcement.view();
+            }
         }
         Ok(())
     }
@@ -190,13 +195,23 @@ impl BBCourse {
  
     pub fn view_course_content(&self, content_predicate: Option<&dyn Fn(&BBContent) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("Note: Only displaying files, documents and assignments.");
-        if let Some(content_predicate) = content_predicate {
-            for content in self.get_attachable_course_content()?.iter().filter(|content| content_predicate(content)) {
-                content.view();
-            }
+        let mut contents = self.get_attachable_course_content()?.into_iter().peekable();
+        if contents.peek().is_none() {
+            println!("No contents found.")
         } else {
-            for content in self.get_attachable_course_content()? {
-                content.view();
+            if let Some(content_predicate) = content_predicate {
+                let mut filtered_contents = contents.filter(|content| content_predicate(content)).peekable();
+                if filtered_contents.peek().is_none() {
+                    println!("No contents passed through filter.");
+                } else {                    
+                    for content in filtered_contents {
+                        content.view();
+                    }
+                }
+            } else {
+                for content in contents {
+                    content.view();
+                }
             }
         }
         Ok(())
@@ -204,16 +219,25 @@ impl BBCourse {
 
     // TODO: Can extend this with content predicate
     pub fn view_course_attachments(&self, attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
-        let course_attachments = self.get_attachable_course_content()?.into_iter()
+        let mut attachments = self.get_attachable_course_content()?.into_iter()
             .map(|content| self.get_content_attachments(&content).expect("Error getting content attachments").into_iter())
-            .flatten();
-        if let Some(attachment_predicate) = attachment_predicate {
-            for attachment in course_attachments.filter(|attachment| attachment_predicate(attachment)) {
-                attachment.view();
-            }
+            .flatten().peekable();
+        if attachments.peek().is_none() {
+            println!("No attachments found.")
         } else {
-            for attachment in course_attachments {
-                attachment.view();
+            if let Some(attachment_predicate) = attachment_predicate {
+                let mut filtered_attachments = attachments.filter(|attachment| attachment_predicate(attachment)).peekable();
+                if filtered_attachments.peek().is_none() {
+                    println!("No attachments passed through filter.");
+                } else {
+                    for attachment in filtered_attachments {
+                        attachment.view();
+                    }
+                }
+            } else {
+                for attachment in attachments {
+                    attachment.view();
+                }
             }
         }
         Ok(())

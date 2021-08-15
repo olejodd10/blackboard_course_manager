@@ -208,7 +208,7 @@ fn main() {
         }
 
         Bcm::Courses => {
-            course_manager.print_courses();
+            course_manager.view_courses();
         },
 
         Bcm::DownloadTree {

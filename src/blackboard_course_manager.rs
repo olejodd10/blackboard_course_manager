@@ -95,7 +95,7 @@ impl BBCourseManager {
         }
     }
 
-    pub fn print_courses(&self) {
+    pub fn view_courses(&self) {
         if self.courses.is_empty() {
             println!("No courses registered yet.");
         } else {
