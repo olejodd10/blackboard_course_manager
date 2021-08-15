@@ -37,14 +37,14 @@ enum Bcm {
             long,
             help="Content title filter"
         )]
-        title_substring: Option<String>, 
+        title: Option<String>, 
         
         #[structopt(
             short,
             long,
             help="Filename filter"
         )]
-        filename_substring: Option<String>, 
+        filename: Option<String>, 
         
         #[structopt(
             short,
@@ -106,7 +106,7 @@ enum Bcm {
             long,
             help="Content title filter"
         )]
-        title_substring: Option<String>, 
+        title: Option<String>, 
     },
 
     #[structopt(about="View course content attachments")]
@@ -122,7 +122,7 @@ enum Bcm {
             long,
             help="Filename filter"
         )]
-        filename_substring: Option<String>, 
+        filename: Option<String>, 
         
         #[structopt(
             short,
@@ -145,14 +145,14 @@ enum Bcm {
             long,
             help="Content title filter"
         )]
-        title_substring: Option<String>, 
+        title: Option<String>, 
         
         #[structopt(
             short,
             long,
             help="Filename filter"
         )]
-        filename_substring: Option<String>, 
+        filename: Option<String>, 
         
         #[structopt(
             short,
@@ -206,13 +206,13 @@ fn main() {
 
         Bcm::DownloadTree {
             course_alias,
-            title_substring,
-            filename_substring,
+            title,
+            filename,
             mimetype,
             unzip,
             overwrite,
         } => {
-            if let Ok(download_size) = course_manager.download_course_content_tree(&course_alias, title_substring, filename_substring, mimetype, unzip, overwrite) {
+            if let Ok(download_size) = course_manager.download_course_content_tree(&course_alias, title, filename, mimetype, unzip, overwrite) {
                 println!("Downloaded a total of {} bytes.", download_size);
             }
         },
@@ -227,28 +227,28 @@ fn main() {
 
         Bcm::Contents {
             course_alias,
-            title_substring,
+            title,
         } => {
-            course_manager.view_course_content(&course_alias, title_substring).unwrap();
+            course_manager.view_course_content(&course_alias, title).unwrap();
         },
 
         Bcm::Attachments {
             course_alias,
-            filename_substring,
+            filename,
             mimetype,
         } => {
-            course_manager.view_course_attachments(&course_alias, filename_substring, mimetype).unwrap();
+            course_manager.view_course_attachments(&course_alias, filename, mimetype).unwrap();
         },
 
         Bcm::DownloadFiles {
             course_alias,
-            title_substring,
-            filename_substring,
+            title,
+            filename,
             mimetype,
             unzip,
             overwrite,
         } => {
-            if let Ok(download_size) = course_manager.download_course_content_attachments(&course_alias, title_substring, filename_substring, mimetype, unzip, overwrite) {
+            if let Ok(download_size) = course_manager.download_course_content_attachments(&course_alias, title, filename, mimetype, unzip, overwrite) {
                 println!("Downloaded a total of {} bytes.", download_size);
             }
         }
