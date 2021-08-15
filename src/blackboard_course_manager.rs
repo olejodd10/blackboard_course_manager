@@ -42,19 +42,15 @@ impl BBCourseManager {
         println!("Please enter the course code (format: TMA4100):");
         let course_code = stdin_trimmed_line();
         
-        let semester = if let Ok(semester) = std::env::var("BBCM_SEMESTER") {
-            semester
-        } else {
+        let semester = std::env::var("BBCM_SEMESTER").unwrap_or_else(|_| {
             println!("Please enter the semester (format: V2020, H2021):");
             stdin_trimmed_line()
-        };
-
-        let domain = if let Ok(domain) = std::env::var("BBCM_DOMAIN") {
-            domain
-        } else {
+        });
+        
+        let domain = std::env::var("BBCM_DOMAIN").unwrap_or_else(|_| {
             println!("Please enter BlackBoard domain the course belongs to (format: ntnu.blackboard.com):");
             stdin_trimmed_line()
-        };
+        });
 
         let bb_session = self.create_bb_session(&domain).expect("Error creating BBSession while registering course");
 
@@ -79,7 +75,7 @@ impl BBCourseManager {
     }
 
     pub fn remove_course(&mut self, alias: &str) {
-        if let None = self.courses.remove(alias) {
+        if self.courses.remove(alias).is_none() {
             eprintln!("Unknown alias \"{}\". No course removed.", alias);
         }
     }
@@ -99,7 +95,7 @@ impl BBCourseManager {
         if self.courses.is_empty() {
             println!("No courses registered yet.");
         } else {
-            for (_, course) in &self.courses {
+            for course in self.courses.values() {
                 println!("{}: {} {}", course.get_alias(), course.get_course_code(), course.get_semester());
             }
         }
@@ -111,7 +107,7 @@ impl BBCourseManager {
 
     pub fn view_course_content(&self, alias: &str, title_substring: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(title_substring) = title_substring {
-            self.get_course(alias).unwrap().view_course_content(Some(&|content| predicate_utils::title_substring(content, &title_substring)))
+            self.get_course(alias).unwrap().view_course_content(Some(&|content| predicate_utils::title_contains(content, &title_substring)))
         } else {
             self.get_course(alias).unwrap().view_course_content(None)
         }
@@ -122,18 +118,18 @@ impl BBCourseManager {
         if let Some(filename_substring) = filename_substring {
             if let Some(mimetype) = mimetype {
                 self.get_course(alias).unwrap().view_course_attachments(
-                    Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)
-                     && predicate_utils::mimetype_substring(attachment, &mimetype))
+                    Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)
+                     && predicate_utils::mimetype_contains(attachment, &mimetype))
                 )
             } else {
                 self.get_course(alias).unwrap().view_course_attachments(
-                    Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring))
+                    Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring))
                 )
             }
         } else {
             if let Some(mimetype) = mimetype {
                 self.get_course(alias).unwrap().view_course_attachments(
-                    Some(&|attachment| predicate_utils::mimetype_substring(attachment, &mimetype))
+                    Some(&|attachment| predicate_utils::mimetype_contains(attachment, &mimetype))
                 )
             } else {
                 self.get_course(alias).unwrap().view_course_attachments(None)
@@ -155,16 +151,16 @@ impl BBCourseManager {
             if let Some(filename_substring) = filename_substring {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_attachments(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)
-                         && predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)
+                         && predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )
                 } else {
                     self.get_course(alias).unwrap().download_course_content_attachments(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)),
                         unzip,
                         overwrite
                     )
@@ -172,14 +168,14 @@ impl BBCourseManager {
             } else {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_attachments(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
-                        Some(&|attachment| predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
+                        Some(&|attachment| predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )
                 } else {
                     self.get_course(alias).unwrap().download_course_content_attachments(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
                         None,
                         unzip,
                         overwrite
@@ -191,15 +187,15 @@ impl BBCourseManager {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_attachments(
                         None,
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)
-                         && predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)
+                         && predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )
                 } else {
                     self.get_course(alias).unwrap().download_course_content_attachments(
                         None,
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)),
                         unzip,
                         overwrite
                     )
@@ -208,7 +204,7 @@ impl BBCourseManager {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_attachments(
                         None,
-                        Some(&|attachment| predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|attachment| predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )
@@ -237,16 +233,16 @@ impl BBCourseManager {
             if let Some(filename_substring) = filename_substring {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_tree(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)
-                         && predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)
+                         && predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )
                 } else {
                     self.get_course(alias).unwrap().download_course_content_tree(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)),
                         unzip,
                         overwrite
                     )
@@ -254,14 +250,14 @@ impl BBCourseManager {
             } else {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_tree(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
-                        Some(&|attachment| predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
+                        Some(&|attachment| predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )
                 } else {
                     self.get_course(alias).unwrap().download_course_content_tree(
-                        Some(&|content| predicate_utils::title_substring(content, &title_substring)),
+                        Some(&|content| predicate_utils::title_contains(content, &title_substring)),
                         None,
                         unzip,
                         overwrite
@@ -273,15 +269,15 @@ impl BBCourseManager {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_tree(
                         None,
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)
-                         && predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)
+                         && predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )
                 } else {
                     self.get_course(alias).unwrap().download_course_content_tree(
                         None,
-                        Some(&|attachment| predicate_utils::filename_substring(attachment, &filename_substring)),
+                        Some(&|attachment| predicate_utils::filename_contains(attachment, &filename_substring)),
                         unzip,
                         overwrite
                     )
@@ -290,7 +286,7 @@ impl BBCourseManager {
                 if let Some(mimetype) = mimetype {
                     self.get_course(alias).unwrap().download_course_content_tree(
                         None,
-                        Some(&|attachment| predicate_utils::mimetype_substring(attachment, &mimetype)),
+                        Some(&|attachment| predicate_utils::mimetype_contains(attachment, &mimetype)),
                         unzip,
                         overwrite
                     )

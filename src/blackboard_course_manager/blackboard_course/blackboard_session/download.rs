@@ -47,7 +47,7 @@ pub fn download_and_unzip(file_url: &str, out_path: &Path, cookie_file_path: Opt
 
     let download_size = download_file(file_url, out_path, cookie_file_path, overwrite)?;
 
-    let out_dir = PathBuf::from(out_path.with_extension("")); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
+    let out_dir = out_path.with_extension(""); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
     
     if out_dir.exists() {
         if !overwrite {

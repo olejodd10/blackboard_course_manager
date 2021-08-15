@@ -1,28 +1,24 @@
 use super::blackboard_definitions::{BBAttachment, BBContent};
 
-fn is_substring(substring: &str, string: &str) -> bool {
-    string.find(substring).is_some()
-}
-
-pub fn mimetype_substring(attachment: &BBAttachment, substring: &str) -> bool {
-    is_substring(substring, &attachment.mimetype)
+pub fn mimetype_contains(attachment: &BBAttachment, substring: &str) -> bool {
+    attachment.mimetype.contains(substring)
 }
 
 pub fn small_file_mimetype(attachment: &BBAttachment) -> bool {
-    !is_substring("video", &attachment.mimetype)
+    !attachment.mimetype.contains("video")
 }
 
-pub fn filename_substring(
+pub fn filename_contains(
     attachment: &BBAttachment, 
     substring: &str
 ) -> bool {
-    is_substring(substring, &attachment.filename)
+    attachment.filename.contains(substring)
 }
 
-pub fn title_substring(
+pub fn title_contains(
     content: &BBContent, 
     substring: &str) -> bool {
-    is_substring(substring, &content.title)
+    content.title.contains(substring)
 }
 
 

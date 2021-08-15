@@ -111,22 +111,18 @@ impl BBSession {
             easy.url(&format!("https://{}/learn/api/public/v1/courses/_24810_1/contents", self.domain)).unwrap();
             easy.cookie_file(&self.cookie_jar_path).unwrap();
             easy.fail_on_error(true).unwrap();
-            if let Ok(_) = easy.perform() {
-                true
-            } else {
-                false
-            }
+            easy.perform().is_ok()
         } else {
             false
         }
     }
 
     pub fn download_file(&self, url: &str, out_path: &Path, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
-        download::download_file(&url, &out_path, Some(&self.cookie_jar_path), overwrite)
+        download::download_file(url, out_path, Some(&self.cookie_jar_path), overwrite)
     }
 
     pub fn download_and_unzip(&self, url: &str, out_path: &Path, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
-        download::download_and_unzip(&url, &out_path, Some(&self.cookie_jar_path), overwrite)
+        download::download_and_unzip(url, out_path, Some(&self.cookie_jar_path), overwrite)
     }
 
     fn download_course_contents_json(&self, course_id: &str, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
@@ -182,7 +178,7 @@ impl BBSession {
             url.extend(format!("?{}", query_parameters.join("&")).chars());
         }
 
-        self.download_file(&url, &out_path, true)
+        self.download_file(&url, out_path, true)
     }
     
     pub fn download_content_attachments_json(&self, course_id: &str, content_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
@@ -192,7 +188,7 @@ impl BBSession {
             course_id,
             content_id);
     
-        self.download_file(&url, &out_path, true)
+        self.download_file(&url, out_path, true)
     }
 
     pub fn download_content_attachment(&self, course_id: &str, content_id: &str, attachment_id: &str, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
@@ -205,9 +201,9 @@ impl BBSession {
             attachment_id);
         
         if unzip {
-            self.download_and_unzip(&url, &out_path, overwrite)
+            self.download_and_unzip(&url, out_path, overwrite)
         } else {
-            self.download_file(&url, &out_path, overwrite)
+            self.download_file(&url, out_path, overwrite)
         }
     }
     
