@@ -3,14 +3,12 @@ use std::io::{BufRead, Write, Read};
 use std::collections::HashMap;
 
 pub mod blackboard_course;
-mod input_utils;
 
 use crate::course::Course;
 use blackboard_course::BBCourse;
 use blackboard_course::predicate_utils;
-use blackboard_course::blackboard_session::BBSession;
+use blackboard_course::blackboard_session::{BBSession, input_utils::stdin_trimmed_line};
 use blackboard_course::blackboard_definitions::BBContent;
-use input_utils::stdin_trimmed_line;
 
 use json;
 

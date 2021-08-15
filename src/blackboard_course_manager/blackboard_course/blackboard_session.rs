@@ -1,8 +1,12 @@
-use crate::download;
+mod download;
+pub mod filename_utils;
+pub mod input_utils;
+
+use filename_utils::cookie_filename;
+use input_utils::stdin_trimmed_line;
+
 use std::path::{Path, PathBuf};
 use std::io::{Read, Write, BufWriter, BufRead};
-use super::filename_utils::cookie_filename;
-use super::super::input_utils::stdin_trimmed_line;
 
 use curl::easy::{Easy2, Easy, Handler, WriteError};
 

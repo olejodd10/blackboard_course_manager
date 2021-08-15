@@ -4,9 +4,8 @@ use std::io::Write;
 pub mod blackboard_session;
 pub mod blackboard_definitions;
 pub mod predicate_utils;
-pub mod filename_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
-use filename_utils::{valid_dir_name, valid_filename};
+use blackboard_session::filename_utils::{valid_dir_name, valid_filename};
 
 pub struct BBCourse {
     session: blackboard_session::BBSession,
