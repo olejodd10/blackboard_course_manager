@@ -69,8 +69,13 @@ impl BBSession {
         
                 let nonce = document.select(&nonce_selector).next().expect("No elements matching selector").value().attr("value").expect("Error getting attribute");
         
-                println!("Please enter user_id:");
-                let user_id = stdin_trimmed_line();
+                let user_id = if let Ok(user_id) = std::env::var("BBCM_USER_ID") {
+                    user_id
+                } else {
+                    println!("Please enter user_id:");
+                    stdin_trimmed_line()
+                };
+                
                 println!("Please enter password:");
                 let password = stdin_trimmed_line();
                 

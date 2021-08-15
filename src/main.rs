@@ -183,8 +183,8 @@ enum Bcm {
 fn main() {
 
     let mut course_manager = BBCourseManager::new(
-        Path::new("./output"), // Bruk environment variabler
-        Path::new("./work"), // Bruk environment variabler
+        Path::new(&std::env::var("BBCM_OUT_DIR").expect("Error: Environment variable BBCM_OUT_DIR is not set")), 
+        Path::new(&std::env::var("BBCM_WORK_DIR").unwrap_or(String::from(".\\work")))
     );
 
     let args = Bcm::from_args();

@@ -44,11 +44,19 @@ impl BBCourseManager {
         println!("Please enter the course code (format: TMA4100):");
         let course_code = stdin_trimmed_line();
         
-        println!("Please enter the semester (format: V2020, H2021):");
-        let semester = stdin_trimmed_line();
+        let semester = if let Ok(semester) = std::env::var("BBCM_SEMESTER") {
+            semester
+        } else {
+            println!("Please enter the semester (format: V2020, H2021):");
+            stdin_trimmed_line()
+        };
 
-        println!("Please enter BlackBoard domain the course belongs to (format: ntnu.blackboard.com):");
-        let domain = stdin_trimmed_line();
+        let domain = if let Ok(domain) = std::env::var("BBCM_DOMAIN") {
+            domain
+        } else {
+            println!("Please enter BlackBoard domain the course belongs to (format: ntnu.blackboard.com):");
+            stdin_trimmed_line()
+        };
 
         let bb_session = self.create_bb_session(&domain).expect("Error creating BBSession while registering course");
 
@@ -60,7 +68,7 @@ impl BBCourseManager {
             &course_code,
             &semester,
             &alias,
-            &self.out_dir.join(format!("{}/{}", semester, alias)),
+            &self.out_dir.join(format!("{}\\{}", semester, alias)),
             &self.work_dir.join(format!("temp_{}", alias)),
             &id
         );
@@ -90,8 +98,12 @@ impl BBCourseManager {
     }
 
     pub fn print_courses(&self) {
-        for (_, course) in &self.courses {
-            println!("{}: {} {}", course.get_alias(), course.get_course_code(), course.get_semester());
+        if self.courses.is_empty() {
+            println!("No courses registered yet.");
+        } else {
+            for (_, course) in &self.courses {
+                println!("{}: {} {}", course.get_alias(), course.get_course_code(), course.get_semester());
+            }
         }
     }
 

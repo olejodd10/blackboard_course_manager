@@ -70,7 +70,7 @@ pub struct BBContent {
 }
 
 impl BBContent {
-    const VIEW_WIDTH: usize = 50;
+    const VIEW_WIDTH: usize = 120;
 
     pub fn vec_from_json_results(json_path: &Path) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
         let json_string = std::fs::read_to_string(&json_path)?;
@@ -137,7 +137,7 @@ pub struct BBAnnouncement {
 }
 
 impl BBAnnouncement {
-    const VIEW_WIDTH: usize = 50;
+    const VIEW_WIDTH: usize = 120;
 
     pub fn vec_from_json_results(json_path: &Path) -> Result<Vec<BBAnnouncement>, Box<dyn std::error::Error>> {
         let json_string = std::fs::read_to_string(&json_path)?;
