@@ -1,5 +1,3 @@
-pub mod wiki_course;
-pub mod blackboard_course;
 
 pub trait Course {
     //fn get_institution(&self) -> &str;

@@ -1,29 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use super::course_manager::course::{self, Course};
-use course::blackboard_course::BBCourse;
-use course::blackboard_course::blackboard_session::BBSession;
-use course::blackboard_course::predicate_utils::small_file_mimetype;
-use course::blackboard_course::predicate_utils::filename_substring;
-use course::blackboard_course::predicate_utils::title_substring;
-use super::course_manager::CourseManager;
-
+use crate::blackboard_course_manager::BBCourseManager;
+use crate::blackboard_course_manager::blackboard_course::BBCourse;
+use crate::blackboard_course_manager::blackboard_course::blackboard_session::BBSession;
+use crate::blackboard_course_manager::blackboard_course::predicate_utils::{small_file_mimetype, filename_substring, title_substring};
 
 const COOKIE_JAR_DIR: &str = "./cookies";
-
-#[test]
-fn wiki_course_test() {
-    let statistikk = super::course_manager::course::wiki_course::WikiCourse::new(
-        "TMA4245", 
-        "2021v", 
-        "stat",
-        Path::new(".\\output\\tma4245files\\"), 
-        ["https://www.math.ntnu.no/emner/TMA4245/2021v/skriftlige_ovinger/inn","-oppg-b.pdf"]
-        .iter().map(|s| String::from(*s)).collect(),
-    );
-
-    // statistikk.download_available_appointments().unwrap();
-}
 
 #[test]
 fn regtek_appointments_test() {
@@ -35,18 +17,18 @@ fn regtek_appointments_test() {
         "V21",
         "regtek",
         Path::new(".\\output\\ttk4105files\\"),
+        Path::new(".\\work"),
         "_24810_1"
     );
     
 
     regtek.download_course_content_attachments(
-        Some(&(
-            |content| {
-            course::blackboard_course::predicate_utils::title_substring(
+        Some(&|content| {
+            title_substring(
                 content, 
                 "Øving ")
             }
-        )), 
+        ), 
         None,
         true,
         false
@@ -63,6 +45,7 @@ fn cpp_test() {
         "V21",
         "cpp",
         Path::new(".\\output\\tdt4102files\\"),
+        Path::new(".\\work"),
         "_22729_1"
     );
 
@@ -92,11 +75,12 @@ fn bb_course_announcements_test() {
         "V21",
         "regtek",
         Path::new(".\\output\\ttk4105files\\"),
+        Path::new(".\\work"),
         "_24810_1"
     );
     
 
-    regtek.view_course_announcements(2, 0).unwrap();
+    regtek.view_course_announcements(None, None).unwrap();
 }
 
 #[test]
@@ -108,22 +92,23 @@ fn regtek_test() {
         "V21",
         "regtek",
         Path::new(".\\output\\ttk4105files\\"),
+        Path::new(".\\work"),
         "_24810_1"
     );
     
     
-    regtek.view_course_announcements(2, 0).unwrap();
+    regtek.view_course_announcements(None, None).unwrap();
     
     regtek.view_course_content(None).unwrap();
 
     regtek.download_course_content_attachments(
-        Some(&(
-            |content| {
-            course::blackboard_course::predicate_utils::title_substring(
+        Some(
+            &|content| {
+            title_substring(
                 content, 
                 "Øving")
             }
-        )), 
+        ), 
         None,
         false,
         true
@@ -143,6 +128,7 @@ fn tilpdat_test() {
         "V21",
         "tilpdat",
         Path::new(".\\output\\ttk4235files\\"),
+        Path::new(".\\work"),
         "_24561_1"
     );
     
@@ -191,14 +177,14 @@ fn test_bb_session_initiate() {
     use std::io::Write;
     use curl::easy::Easy;
     let session = BBSession::new("ntnu.blackboard.com", Path::new(COOKIE_JAR_DIR)).unwrap();
-    session.download_course_announcements_json("_24810_1", 3, 0, Path::new("HALLO.txt")).unwrap();
+    session.download_course_announcements_json("_24810_1", &[], Path::new("HALLO.txt")).unwrap();
 }
 
 #[test]
 fn test_register_course() {
     use std::io::Write;
     use curl::easy::Easy;
-    let mut course_manager = CourseManager::new(
+    let mut course_manager = BBCourseManager::new(
         Path::new("./output"),
         Path::new("./work"),
     );

@@ -13,13 +13,12 @@ pub struct BBCourse {
     course_code: String,
     semester: String,
     alias: String,
-    // out_dir: PathBuf,
+    out_dir: PathBuf,
     files_dir: PathBuf,
     temp_dir: PathBuf,
     tree_dir: PathBuf,
     id: String,
 }
-
 
 impl BBCourse {
     pub fn new(
@@ -28,10 +27,10 @@ impl BBCourse {
         semester: &str,
         alias: &str,
         out_dir: &Path,
+        temp_dir: &Path,
         id: &str
     ) -> BBCourse {
         let files_dir = out_dir.join("downloaded_files");
-        let temp_dir = out_dir.join("temp");
         let tree_dir = out_dir.join("content_tree");
         std::fs::create_dir_all(&out_dir).expect("Error creating base folder");
         std::fs::create_dir_all(&files_dir).expect("Error creating files folder"); 
@@ -42,9 +41,9 @@ impl BBCourse {
             course_code: course_code.to_string(),
             semester: semester.to_string(),
             alias: alias.to_string(),
-            // out_dir,
+            out_dir: out_dir.to_path_buf(),
             files_dir,
-            temp_dir,
+            temp_dir: temp_dir.to_path_buf(),
             tree_dir,
             // announcements_dir, ...
             id: id.to_string(),
@@ -62,14 +61,14 @@ impl BBCourse {
     fn get_content_children(&self, content: &BBContent) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
         let content_children_json_filename = format!("{}_children.json", valid_dir_name(&content.title));
         let content_children_json_path = self.temp_dir.join(&content_children_json_filename);
-        self.session.download_content_children_json(&self.id, &content.id, Some(&[blackboard_session::DEFAULT_FIELDS]), &content_children_json_path)?;
+        self.session.download_content_children_json(&self.id, &content.id, &[blackboard_session::DEFAULT_FIELDS], &content_children_json_path)?;
         BBContent::vec_from_json_results(&content_children_json_path)
     }
 
     pub fn download_course_content_tree(
         &self, 
-        content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>, 
-        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
+        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         unzip: bool, 
         overwrite: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
@@ -84,8 +83,8 @@ impl BBCourse {
 
     fn download_children(&self, 
         content: &BBContent, 
-        content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>, 
-        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
+        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path, 
         unzip: bool, 
         overwrite: bool
@@ -135,14 +134,25 @@ impl BBCourse {
     }
 
     //Announcements
-    pub fn get_course_announcements(&self, limit: usize, offset: usize) -> Result<Vec<BBAnnouncement>, Box<dyn std::error::Error>> {
+    pub fn get_course_announcements(&self, limit: Option<usize>, offset: Option<usize>) -> Result<Vec<BBAnnouncement>, Box<dyn std::error::Error>> {
         let announcements_json_filename = "announcements.json";
         let announcements_json_path = self.temp_dir.join(&announcements_json_filename);
-        self.session.download_course_announcements_json(&self.id, limit, offset, &announcements_json_path)?;
+
+        let mut query_parameters = Vec::new();
+        if let Some(limit) = limit {
+            query_parameters.push(format!("limit={}", limit));
+        }
+        if let Some(offset) = offset {
+            query_parameters.push(format!("offset={}", offset));
+        }
+
+        let borrowed_query_parameters: Vec<&str> = query_parameters.iter().map(|s| s.as_str()).collect();
+
+        self.session.download_course_announcements_json(&self.id, &borrowed_query_parameters[..], &announcements_json_path)?;
         BBAnnouncement::vec_from_json_results(&announcements_json_path)
     }
     
-    pub fn view_course_announcements(&self, limit: usize, offset: usize) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn view_course_announcements(&self, limit: Option<usize>, offset: Option<usize>) -> Result<(), Box<dyn std::error::Error>> {
         for announcement in self.get_course_announcements(limit, offset)? {
             announcement.view();
         }
@@ -179,7 +189,7 @@ impl BBCourse {
         Ok(course_contents)
     }
  
-    pub fn view_course_content(&self, content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn view_course_content(&self, content_predicate: Option<&dyn Fn(&BBContent) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("Note: Only displaying files, documents and assignments.");
         if let Some(content_predicate) = content_predicate {
             for content in self.get_attachable_course_content()?.iter().filter(|content| content_predicate(content)) {
@@ -193,7 +203,8 @@ impl BBCourse {
         Ok(())
     }
 
-    pub fn view_course_attachments(&self, attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
+    // TODO: Can extend this with content predicate
+    pub fn view_course_attachments(&self, attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
         let course_attachments = self.get_attachable_course_content()?.into_iter()
             .map(|content| self.get_content_attachments(&content).expect("Error getting content attachments").into_iter())
             .flatten();
@@ -221,7 +232,7 @@ impl BBCourse {
     pub fn download_content_attachments(
         &self, 
         content: &BBContent, 
-        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path,
         unzip: bool,
         overwrite: bool
@@ -245,8 +256,8 @@ impl BBCourse {
     // Download all attachments in course meeting predicates
     pub fn download_course_content_attachments(
         &self, 
-        content_predicate: Option<&'static dyn Fn(&BBContent) -> bool>, 
-        attachment_predicate: Option<&'static dyn Fn(&BBAttachment) -> bool>,
+        content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
+        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         unzip: bool,
         overwrite: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
@@ -284,8 +295,39 @@ impl super::Course for BBCourse {
     }
 }
 
+
 impl Drop for BBCourse {
     fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.temp_dir).expect("Error deleting temp_dir");
+        if self.temp_dir.exists() {
+            std::fs::remove_dir_all(&self.temp_dir).expect("Error deleting temp_dir");
+        }
+    }
+}
+
+impl std::convert::From<&BBCourse> for json::JsonValue {
+    fn from(course: &BBCourse) -> json::JsonValue {
+        json::object!{
+            session: json::JsonValue::from(&course.session),
+            course_code: course.course_code.clone(),
+            semester: course.semester.clone(),
+            alias: course.alias.clone(),
+            out_dir: course.out_dir.as_os_str().to_str().unwrap(),
+            temp_dir: course.temp_dir.as_os_str().to_str().unwrap(),
+            id: course.id.clone(),
+        }
+    }
+}
+
+impl std::convert::From<json::JsonValue> for BBCourse {
+    fn from(course: json::JsonValue) -> BBCourse {
+        BBCourse::new(
+            course["session"].clone().into(),
+            &course["course_code"].to_string(),
+            &course["semester"].to_string(),
+            &course["alias"].to_string(),
+            Path::new(&course["out_dir"].to_string()),
+            Path::new(&course["temp_dir"].to_string()),
+            &course["id"].to_string(),
+        )
     }
 }

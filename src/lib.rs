@@ -3,7 +3,8 @@
 
 pub mod download;
 
-pub mod course_manager;
+pub mod blackboard_course_manager;
+mod course;
 
 #[cfg(test)]
 mod tests;
