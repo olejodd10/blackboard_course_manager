@@ -108,7 +108,7 @@ impl BBSession {
     pub fn test_connection(&self) -> bool {
         if self.cookie_jar_path.exists() {
             let mut easy = Easy::new();
-            easy.url(&format!("https://{}/learn/api/public/v1/courses/_24810_1/contents", self.domain)).unwrap();
+            easy.url(&format!("https://{}/learn/api/public/v1/courses", self.domain)).unwrap();
             easy.cookie_file(&self.cookie_jar_path).unwrap();
             easy.fail_on_error(true).unwrap();
             easy.perform().is_ok()
