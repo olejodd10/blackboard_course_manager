@@ -1,5 +1,5 @@
 // https://rust-cli.github.io/book/index.html
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use structopt::StructOpt;
 
@@ -187,7 +187,7 @@ fn main() {
 
     let mut course_manager = BBCourseManager::new(
         Path::new(&std::env::var("BBCM_OUT_DIR").expect("Error: Environment variable BBCM_OUT_DIR is not set")), 
-        Path::new(&std::env::var("BBCM_WORK_DIR").unwrap_or_else(|_| String::from(".\\work")))
+        &std::env::var("BBCM_WORK_DIR").map(|val| PathBuf::from(&val)).unwrap_or_else(|_| std::env::temp_dir().join("bbcm_work"))
     );
 
     let args = Bcm::from_args();
