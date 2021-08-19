@@ -96,8 +96,7 @@ impl BBContent {
     }
 
     pub fn view(&self) {
-        println!("{}\nTITLE: {}\nCONTENT HANDLER: {:?}\n",
-            "*".repeat(BBContent::VIEW_WIDTH),
+        println!("TITLE: {}\nCONTENT HANDLER: {:?}\n",
             self.title,
             self.content_handler
         );
