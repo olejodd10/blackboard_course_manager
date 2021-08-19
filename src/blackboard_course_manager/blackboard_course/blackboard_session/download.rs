@@ -7,14 +7,18 @@ const PATH_LENGTH_WARNING_LIMIT: usize = 230;
 
 
 pub fn download_file(file_url: &str, out_path: &Path, cookie_file_path: Option<&Path>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
-    
+
     if !overwrite && out_path.exists() { 
-        eprintln!("File already exists; skipping download.");
+        if out_path.extension().unwrap() != "json" {
+            eprintln!("Skipping download of {}", out_path.file_name().unwrap().to_str().unwrap());
+        }
         return Ok(0.0); 
     }
 
-    // eprintln!("Downloading {:?}", out_path);
-    
+    if out_path.extension().unwrap() != "json" {
+        eprintln!("Downloading {}", out_path.file_name().unwrap().to_str().unwrap());
+    }
+
     if let Ok(absolute_path) = out_path.canonicalize() {
         if absolute_path.to_str().unwrap().len() > PATH_LENGTH_WARNING_LIMIT {
             eprintln!("WARNING: Path length exceeds {} characters, and might approach system limit.", PATH_LENGTH_WARNING_LIMIT);
@@ -45,19 +49,19 @@ pub fn download_file(file_url: &str, out_path: &Path, cookie_file_path: Option<&
 
 pub fn download_and_unzip(file_url: &str, out_path: &Path, cookie_file_path: Option<&Path>, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
 
-    let download_size = download_file(file_url, out_path, cookie_file_path, overwrite)?;
-
     let out_dir = out_path.with_extension(""); //Må gjøre sånn her så en &Path ikke borrowes inn i closuren under
     
     if out_dir.exists() {
         if !overwrite {
-            eprintln!("Directory already exists; skipping unzip.");
-            return Ok(download_size);
+            eprintln!("Skipping download of {} because unzipped folder already exists", out_dir.file_name().unwrap().to_str().unwrap());
+            return Ok(0.0);
         } else {
             std::fs::remove_dir_all(&out_dir)?;
             std::fs::create_dir_all(&out_dir)?; // Må klone for å unngå feilmelding        
         }
     } 
+
+    let download_size = download_file(file_url, out_path, cookie_file_path, overwrite)?;
 
     eprintln!("Unzipping {:?}", out_path);
 

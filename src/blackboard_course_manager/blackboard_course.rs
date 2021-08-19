@@ -29,7 +29,7 @@ impl BBCourse {
         temp_dir: &Path,
         id: &str
     ) -> BBCourse {
-        let files_dir = out_dir.join("downloaded_files");
+        let files_dir = out_dir.join("downloaded_attachments");
         let tree_dir = out_dir.join("content_tree");
         std::fs::create_dir_all(&out_dir).expect("Error creating base folder");
         std::fs::create_dir_all(&files_dir).expect("Error creating files folder"); 
@@ -109,7 +109,7 @@ impl BBCourse {
                 Ok(total_download_size)
             },
             handler => {
-                eprintln!("No branching action defined for content handler {:?}; saving links file for {} instead.", handler, content.title);
+                eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", content.title, handler);
                 if !content.links.is_empty() {
                     let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&content.title)));
                     self.create_links_file(content, &links_file_path)

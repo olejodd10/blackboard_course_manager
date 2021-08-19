@@ -135,8 +135,8 @@ enum Bcm {
         mimetype: Option<String>,
     },
 
-    #[structopt(about="Download course files")]
-    DownloadFiles {
+    #[structopt(about="Download course content attachments")]
+    DownloadAttachments {
         #[structopt(
             name="course-alias",
             help="Alias of course",
@@ -247,7 +247,7 @@ fn main() {
             course_manager.view_course_attachments(&course_alias, filename, mimetype).unwrap();
         },
 
-        Bcm::DownloadFiles {
+        Bcm::DownloadAttachments {
             course_alias,
             title,
             filename,
