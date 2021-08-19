@@ -13,6 +13,7 @@ use std::path::Path;
 #[derive(Debug, PartialEq)]
 pub enum BBContentHandler {
     BBPanoptoBCMashup, // BBPanoptoBCMashup has a body attribute with an iframe. The same media can be found by following the attached link.  
+    Null,
     XBBASMTTestLink,
     XBBAssignment,
     XBBBlankpage,
@@ -33,8 +34,9 @@ pub const ATTACHABLE_CONTENT_HANDLERS: [BBContentHandler; 3] = [
     BBContentHandler::XBBFile,
 ];
 
-pub const VIEWABLE_CONTENT_HANDLERS: [BBContentHandler; 12] = [
-    BBContentHandler::BBPanoptoBCMashup,   
+pub const VIEWABLE_CONTENT_HANDLERS: [BBContentHandler; 13] = [
+    BBContentHandler::BBPanoptoBCMashup,
+    BBContentHandler::Null,
     BBContentHandler::XBBASMTTestLink,
     BBContentHandler::XBBAssignment,
     BBContentHandler::XBBBlankpage,
@@ -53,6 +55,7 @@ impl BBContentHandler {
     pub fn new(content_handler: &str) -> BBContentHandler {
         match content_handler {
             "resource/bb-panopto-bc-mashup" => BBContentHandler::BBPanoptoBCMashup,
+            "null" => BBContentHandler::Null,
             "resource/x-bb-asmt-test-link" => BBContentHandler::XBBASMTTestLink,
             "resource/x-bb-assignment" => BBContentHandler::XBBAssignment,
             "resource/x-bb-blankpage" => BBContentHandler::XBBBlankpage,
