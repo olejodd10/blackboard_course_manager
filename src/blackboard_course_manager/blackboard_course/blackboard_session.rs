@@ -125,7 +125,7 @@ impl BBSession {
         download::download_and_unzip(url, out_path, Some(&self.cookie_jar_path), overwrite)
     }
 
-    fn download_course_contents_json(&self, course_id: &str, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+    pub fn download_course_contents_json(&self, course_id: &str, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents",
             self.domain,
             course_id);

@@ -111,9 +111,9 @@ impl BBCourseManager {
 
     pub fn view_course_content(&self, alias: &str, title_substring: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(title_substring) = title_substring {
-            self.get_course(alias).unwrap().view_course_content(Some(&|content| predicate_utils::title_contains(content, &title_substring)))
+            self.get_course(alias).unwrap().view_course_contents(Some(&|content| predicate_utils::title_contains(content, &title_substring)))
         } else {
-            self.get_course(alias).unwrap().view_course_content(None)
+            self.get_course(alias).unwrap().view_course_contents(None)
         }
     }
 

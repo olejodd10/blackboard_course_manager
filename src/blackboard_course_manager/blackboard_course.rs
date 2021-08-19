@@ -93,8 +93,8 @@ impl BBCourse {
                 return Ok(0.0);
             }
         }
-        match content.content_handler {
-            BBContentHandler::XBBFile | BBContentHandler::XBBDocument | BBContentHandler::XBBAssignment => {
+        match &content.content_handler {
+            handler if blackboard_definitions::ATTACHABLE_CONTENT_HANDLERS.contains(handler) => {
                 let attachments_path = out_path.join(&valid_dir_name(&content.title));
                 std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
                 self.download_content_attachments(content, attachment_predicate, &attachments_path, unzip, overwrite) 
@@ -108,8 +108,8 @@ impl BBCourse {
                 }
                 Ok(total_download_size)
             },
-            BBContentHandler::BBPanoptoBCMashup | BBContentHandler::XBBForumlink | 
-            BBContentHandler::XBBASMTTestLink | BBContentHandler::XBBBlankpage => {
+            handler => {
+                eprintln!("No branching action defined for content handler {:?}; saving links file for {} instead.", handler, content.title);
                 if !content.links.is_empty() {
                     let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&content.title)));
                     self.create_links_file(content, &links_file_path)
@@ -117,10 +117,6 @@ impl BBCourse {
                     Ok(0.0)
                 }
             },
-            _ => {
-                eprintln!("No defined action for {:?}; skipping download of \"{}\" content.", content.content_handler, content.title);
-                Ok(0.0)
-            }
         }
     }
 
@@ -164,38 +160,27 @@ impl BBCourse {
     }
 
     // Course content, to get specific files (not tree)
-    pub fn get_course_files(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let files_json_filename = "files.json";
-        let files_json_path = self.temp_dir.join(&files_json_filename);
-        self.session.download_course_files_json(&self.id, &files_json_path)?;
-        BBContent::vec_from_json_results(&files_json_path)
+    pub fn get_course_contents(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
+        let json_filename = "contents.json";
+        let json_path = self.temp_dir.join(&json_filename);
+        self.session.download_course_contents_json(&self.id, &["recursive=true"], &json_path)?;
+        BBContent::vec_from_json_results(&json_path)
     }
 
-    pub fn get_course_documents(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let documents_json_filename = "documents.json";
-        let documents_json_path = self.temp_dir.join(&documents_json_filename);
-        self.session.download_course_documents_json(&self.id, &documents_json_path)?;
-        BBContent::vec_from_json_results(&documents_json_path)
+    fn get_attachable_course_contents(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
+        Ok(self.get_course_contents()?.into_iter()
+            .filter(|content| blackboard_definitions::ATTACHABLE_CONTENT_HANDLERS.contains(&content.content_handler))
+            .collect())
     }
 
-    pub fn get_course_assignments(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let assignments_json_filename = "assignments.json";
-        let assignments_json_path = self.temp_dir.join(&assignments_json_filename);
-        self.session.download_course_assignments_json(&self.id, &assignments_json_path)?;
-        BBContent::vec_from_json_results(&assignments_json_path)
-    }
-
-    pub fn get_attachable_course_content(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let mut course_contents = Vec::new();
-        course_contents.append(&mut self.get_course_files()?);
-        course_contents.append(&mut self.get_course_documents()?);
-        course_contents.append(&mut self.get_course_assignments()?);
-        Ok(course_contents)
+    fn get_viewable_course_contents(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
+        Ok(self.get_course_contents()?.into_iter()
+            .filter(|content| blackboard_definitions::VIEWABLE_CONTENT_HANDLERS.contains(&content.content_handler))
+            .collect())
     }
  
-    pub fn view_course_content(&self, content_predicate: Option<&dyn Fn(&BBContent) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
-        eprintln!("Note: Only displaying files, documents and assignments.");
-        let mut contents = self.get_attachable_course_content()?.into_iter().peekable();
+    pub fn view_course_contents(&self, content_predicate: Option<&dyn Fn(&BBContent) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
+        let mut contents = self.get_viewable_course_contents()?.into_iter().peekable();
         if contents.peek().is_none() {
             println!("No contents found.")
         } else {
@@ -219,9 +204,10 @@ impl BBCourse {
 
     // TODO: Can extend this with content predicate
     pub fn view_course_attachments(&self, attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>) -> Result<(), Box<dyn std::error::Error>> {
-        let mut attachments = self.get_attachable_course_content()?.into_iter()
+        let mut attachments = self.get_attachable_course_contents()?.into_iter()
             .map(|content| self.get_content_attachments(&content).expect("Error getting content attachments").into_iter())
-            .flatten().peekable();
+            .flatten()
+            .peekable();
         if attachments.peek().is_none() {
             println!("No attachments found.")
         } else {
@@ -284,14 +270,14 @@ impl BBCourse {
         unzip: bool,
         overwrite: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
-        let attachable_course_content = self.get_attachable_course_content()?;
+        let attachable_course_contents = self.get_attachable_course_contents()?;
         let mut total_download_size = 0.0;
         if let Some(content_predicate) = content_predicate {
-            for content in attachable_course_content.into_iter().filter(|content| content_predicate(content)) {
+            for content in attachable_course_contents.into_iter().filter(|content| content_predicate(content)) {
                 total_download_size += self.download_content_attachments(&content, attachment_predicate, &self.files_dir, unzip, overwrite)?;
             }
         } else {
-            for content in attachable_course_content {
+            for content in attachable_course_contents {
                 total_download_size += self.download_content_attachments(&content, attachment_predicate, &self.files_dir, unzip, overwrite)?;
             }
         }
