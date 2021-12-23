@@ -47,50 +47,11 @@ impl BBSession {
         if self.test_connection() {
             Ok(())
         } else {
-            eprintln!("Initiating new BlackBoard connection.");
-    
-            std::fs::create_dir_all(&self.cookie_jar_dir)?;
+            eprintln!("No existing connection found.");
             let cookie_jar_path = self.cookie_jar_dir.join(cookie_filename(&self.domain));
-            if cookie_jar_path.exists() {
-                std::fs::remove_file(&cookie_jar_path)?; // ~
-            }
-    
-            //Block to force cookie file write before connection test
-            {
-                let mut easy = Easy2::new(Collector(Vec::new()));
-                easy.cookie_jar(&cookie_jar_path)?;
-                easy.cookie_file(&cookie_jar_path)?;
-                easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
-                easy.fail_on_error(true)?; //Viktig for å faile på 401
-                
-                
-                easy.url(&format!("https://{}/ultra", self.domain))?;
-                easy.perform()?; //Husk at denne er synchronous derfor er det trygt å aksessere mutexen under.
-                
-                let content = String::from_utf8(easy.get_ref().0.clone()).expect("Error converting content to String");
-                let document = scraper::Html::parse_document(&content);
-                let nonce_selector = scraper::Selector::parse(r#"input[name="blackboard.platform.security.NonceUtil.nonce"]"#).expect("Error parsing selector");
-        
-                let nonce = document.select(&nonce_selector).next().expect("No elements matching selector").value().attr("value").expect("Error getting attribute");
-        
-                let user_id = if let Ok(user_id) = std::env::var("BBCM_USER_ID") {
-                    user_id
-                } else {
-                    println!("Please enter user_id:");
-                    stdin_trimmed_line()
-                };
-                
-                println!("Please enter password:");
-                let password = stdin_trimmed_line();
-                
-                let login_form_data = format!("user_id={}&password={}&blackboard.platform.security.NonceUtil.nonce={}", user_id, password, nonce);
-                
-                easy.url(&format!("https://{}/webapps/login/", self.domain))?;
-                easy.post(true)?; // Kanskje unødvendig
-                easy.post_fields_copy(login_form_data.as_bytes())?; 
-                easy.perform()?; //Husk at denne er synchronous!
-            }
-    
+            std::fs::create_dir_all(&self.cookie_jar_dir)?;
+            eprintln!("Please export cookies from domain \"{}\" to following path: \n{}\nPress enter when done.", self.domain, cookie_jar_path.to_str().unwrap());
+            std::io::stdin().read_line(&mut String::new()).unwrap();
             let bb_session = BBSession {
                 domain: self.domain.to_string(),
                 cookie_jar_dir: self.cookie_jar_dir.to_path_buf(),
