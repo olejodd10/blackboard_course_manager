@@ -1,12 +1,3 @@
-// Alle 'a-lifetimene er veldig gode å ha, for de viser avhengigheten BBSession
-
-// Mulige contenttyper:
-// x-bb-file
-// x-bb-document
-// x-bb-assignment
-// x-bb-folder
-// bb-panopto-bc-mashup
-
 use std::path::Path;
 
 // https://docs.blackboard.com/learn/rest/advanced/contenthandler-datatypes
