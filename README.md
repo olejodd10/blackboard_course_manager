@@ -14,4 +14,3 @@ These environment variables can be set to simplify usage:
 
 * `BBCM_SEMESTER`
 * `BBCM_DOMAIN`
-* `BBCM_USER_ID`
