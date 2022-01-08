@@ -80,7 +80,6 @@ impl BBCourse {
         for content in self.get_course_root_content()? {
             total_download_size += self.download_children(&content, content_predicate, attachment_predicate, &self.tree_dir, unzip, overwrite)?;
         }
-        eprintln!("Content tree download completed. Total download size: {} bytes.", total_download_size);
         Ok(total_download_size)
     }
 
