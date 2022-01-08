@@ -8,7 +8,9 @@ use crate::course::Course;
 use blackboard_course::BBCourse;
 use blackboard_course::predicate_utils;
 use blackboard_course::blackboard_session::{BBSession, input_utils::stdin_trimmed_line};
+use blackboard_course::filename_utils::cookie_filename;
 use blackboard_course::blackboard_definitions::BBContent;
+
 
 use json;
 
@@ -31,10 +33,6 @@ impl BBCourseManager {
         course_manager
     }
 
-    fn create_bb_session(&mut self, domain: &str) -> Result<BBSession, Box<dyn std::error::Error>> {
-        BBSession::new(domain, &self.work_dir.join("cookies"))
-    }
-
     pub fn register_course(&mut self) {
         println!("Please enter an alias for the new course:");
         let alias = stdin_trimmed_line();
@@ -52,7 +50,11 @@ impl BBCourseManager {
             stdin_trimmed_line()
         });
 
-        let bb_session = self.create_bb_session(&domain).expect("Error creating BBSession while registering course");
+        // This dependency is weird, but it's important that different courses from the same domain use the same session. 
+        let bb_session = blackboard_course::blackboard_session::BBSession::new(
+            &domain, 
+            &self.work_dir.join(format!("cookies/{}", cookie_filename(&domain)))
+        ).expect("Error creating BBSession while registering course");
 
         println!("Please enter BlackBoard course id (format: _24810_1):");
         let id = stdin_trimmed_line();

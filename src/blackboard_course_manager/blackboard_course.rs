@@ -2,11 +2,12 @@ use std::path::{PathBuf, Path};
 use std::io::Write;
 
 mod download;
+pub mod filename_utils;
 pub mod blackboard_session;
 pub mod blackboard_definitions;
 pub mod predicate_utils;
 use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
-use blackboard_session::filename_utils::{valid_dir_name, valid_filename};
+use filename_utils::{valid_dir_name, valid_filename};
 
 pub const DEFAULT_FIELDS: &str = "fields=id,title,contentHandler,links"; // Looks like all contentHandlers have these fields (not attachments, though).
 
@@ -24,7 +25,7 @@ pub struct BBCourse {
 
 impl BBCourse {
     pub fn new(
-        session: blackboard_session::BBSession,
+        session: blackboard_session::BBSession, // Should be reference to session owned by course manager
         course_code: &str,
         semester: &str,
         alias: &str,
