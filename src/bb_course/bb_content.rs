@@ -69,19 +69,18 @@ impl BBContentHandler {
     }
 }
 
-pub struct BBContent<'a> {
-    pub course: &'a BBCourse,
+pub struct BBContent<'a, 'b> {
+    pub course: &'a BBCourse<'b>,
     pub id: String,
     pub title: String,
     pub content_handler: BBContentHandler,
     pub links: Vec<String>, 
 }
 
-impl<'a> BBContent<'a> {
-    const VIEW_WIDTH: usize = 120;
+impl<'a, 'b> BBContent<'a, 'b> {
     pub const DEFAULT_FIELDS: &'static str = "fields=id,title,contentHandler,links"; // Looks like all contentHandlers have these fields (not attachments, though).
 
-    pub fn vec_from_json_results(json_path: &Path, course: &'a BBCourse) -> Result<Vec<BBContent<'a>>, Box<dyn std::error::Error>> {
+    pub fn vec_from_json_results(json_path: &Path, course: &'a BBCourse<'b>) -> Result<Vec<BBContent<'a, 'b>>, Box<dyn std::error::Error>> {
         let json_string = std::fs::read_to_string(&json_path)?;
         let parsed_json = json::parse(&json_string)?;
 
@@ -113,16 +112,16 @@ impl<'a> BBContent<'a> {
     fn download_attachments_json(&self, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments",
-            self.course.session.domain,
+            self.course.manager.session.domain,
             self.course.id,
             self.id);
     
-        self.course.session.download_file(&url, out_path)
+        self.course.manager.session.download_file(&url, out_path)
     }
     
     fn download_children_json(&self, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/children",
-            self.course.session.domain,
+            self.course.manager.session.domain,
             self.course.id,
             self.id);
     
@@ -130,7 +129,7 @@ impl<'a> BBContent<'a> {
             url.extend(format!("?{}", query_parameters.join("&")).chars());
         }
 
-        self.course.session.download_file(&url, out_path)
+        self.course.manager.session.download_file(&url, out_path)
     }
 
     pub fn download_children(&self, 
@@ -207,7 +206,7 @@ impl<'a> BBContent<'a> {
     fn create_links_file(&self, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         let mut links_file = std::fs::File::create(out_path).expect("Error creating links file");
         for link in &self.links {
-            writeln!(links_file, "https://{}{}", self.course.session.domain, link).unwrap();
+            writeln!(links_file, "https://{}{}", self.course.manager.session.domain, link).unwrap();
         }
         Ok(links_file.metadata()?.len() as f64)
     }

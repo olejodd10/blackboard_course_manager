@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::io::Write;
-use curl::easy::{Easy, List};
+use curl::easy::Easy;
 
 
 const PATH_LENGTH_WARNING_LIMIT: usize = 230;

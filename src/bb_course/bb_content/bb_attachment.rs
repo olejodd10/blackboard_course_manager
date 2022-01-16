@@ -1,15 +1,15 @@
 use super::BBContent;
 use std::path::Path;
 
-pub struct BBAttachment<'a, 'b> {
-    pub content: &'a BBContent<'b>,
+pub struct BBAttachment<'a, 'b, 'c> {
+    pub content: &'a BBContent<'b, 'c>,
     pub id: String,
     pub filename: String,
     pub mimetype: String,
 }
 
-impl<'a, 'b> BBAttachment<'a, 'b> {
-    pub fn vec_from_json_results(json_path: &Path, content: &'b BBContent<'a>) -> Result<Vec<BBAttachment<'a,'b>>, Box<dyn std::error::Error>> {
+impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
+    pub fn vec_from_json_results(json_path: &Path, content: &'a BBContent<'b, 'c>) -> Result<Vec<BBAttachment<'a, 'b, 'c>>, Box<dyn std::error::Error>> {
         let json_string = std::fs::read_to_string(&json_path)?;
         let parsed_json = json::parse(&json_string)?;
 
@@ -27,14 +27,14 @@ impl<'a, 'b> BBAttachment<'a, 'b> {
     pub fn download(&self, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
         
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
-        self.content.course.session.domain,
+        self.content.course.manager.session.domain,
         self.content.course.id,
         self.content.id,
         self.id);
         
         if overwrite || !out_path.exists() {
             println!("Downloading {:?}", out_path.file_name().unwrap());
-            let download_size = self.content.course.session.download_file(&url, out_path)?;
+            let download_size = self.content.course.manager.session.download_file(&url, out_path)?;
             if unzip {
                 let out_dir = out_path.with_extension("");
                 let zip_file = std::fs::File::open(out_path)?;

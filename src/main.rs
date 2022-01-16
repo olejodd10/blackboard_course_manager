@@ -1,28 +1,18 @@
 // https://rust-cli.github.io/book/index.html
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::collections::HashMap;
 
 use structopt::StructOpt;
 
 //OBS!! Merk at std::error::Error er en trait, mens std::io::Error er en struct!!
-use blackboard_course_manager::bb_course_manager::BBCourseManager;
+use blackboard_course_manager::BBCourseManager;
+use blackboard_course_manager::bb_course::BBCourse;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Blackboard Course Manager", about = "A tool for managing Blackboard courses")]
 enum Bbcm {
     #[structopt(about="Register new course")]
     Register,
-
-    #[structopt(about="Remove registered course")]
-    Remove {
-        #[structopt(
-            name="course-alias",
-            help="Alias of course",
-        )]
-        course_alias: String,
-    },
-
-    #[structopt(about="Remove all registered courses")]
-    Reset,
 
     #[structopt(about="View registered courses")]
     Courses,
@@ -34,27 +24,6 @@ enum Bbcm {
             help="Alias of course",
         )]
         course_alias: String,
-
-        #[structopt(
-            short,
-            long,
-            help="Content title filter"
-        )]
-        title: Option<String>, 
-        
-        #[structopt(
-            short,
-            long,
-            help="Filename filter"
-        )]
-        filename: Option<String>, 
-        
-        #[structopt(
-            short,
-            long,
-            help="Mimetype filter"
-        )]
-        mimetype: Option<String>,
         
         #[structopt(
             short,
@@ -94,47 +63,52 @@ enum Bbcm {
             help="Offset announcements",
         )]
         offset: Option<usize>,
-    }
+    },
+
+    #[structopt(about="Remove registered course")]
+    Remove {
+        #[structopt(
+            name="course-alias",
+            help="Alias of course",
+        )]
+        course_alias: String,
+    },
+
+    #[structopt(about="Remove all registered courses")]
+    Reset
 }
 
 fn main() {
+    let domain = std::env::var("BBCM_DOMAIN").expect("Please set BBCM_DOMAIN environment variable.");
+    let out_dir = PathBuf::from(&std::env::var("BBCM_OUT_DIR").expect("Error: Environment variable BBCM_OUT_DIR is not set")); 
+    let work_dir = std::env::var("BBCM_WORK_DIR").map(|val| PathBuf::from(&val)).unwrap_or_else(|_| std::env::temp_dir().join("bbcm_work"));
 
-    let mut course_manager = BBCourseManager::new(
-        Path::new(&std::env::var("BBCM_OUT_DIR").expect("Error: Environment variable BBCM_OUT_DIR is not set")), 
-        &std::env::var("BBCM_WORK_DIR").map(|val| PathBuf::from(&val)).unwrap_or_else(|_| std::env::temp_dir().join("bbcm_work"))
-    );
+    let manager = BBCourseManager::new(&domain, &out_dir, &work_dir);
+    let mut courses: HashMap<String, BBCourse> = manager.load_courses().into_iter().map(|course| (course.alias.clone(), course)).collect();
 
-    let args = Bbcm::from_args();
-
-    match args {
+    match Bbcm::from_args() {
         Bbcm::Register => {
-            course_manager.register_course();
+            let course = BBCourse::register(&manager);
+            courses.insert(course.alias.clone(), course);
         },
-
-        Bbcm::Remove {
-            course_alias,
-        } => {
-            course_manager.remove_course(&course_alias);
-        },
-
-        Bbcm::Reset => {
-            course_manager.remove_all_courses();
-        }
 
         Bbcm::Courses => {
-            course_manager.view_courses();
+            for course in courses.values() {
+                course.view();
+            }
         },
 
         Bbcm::DownloadTree {
             course_alias,
-            title,
-            filename,
-            mimetype,
             unzip,
             overwrite,
         } => {
-            if let Ok(download_size) = course_manager.download_course_content_tree(&course_alias, title, filename, mimetype, unzip, overwrite) {
-                println!("Downloaded a total of {} bytes.", download_size);
+            if let Some(course) = courses.get(&course_alias) {
+                if let Ok(download_size) = course.download_course_content_tree(None, None, unzip, overwrite) {
+                    println!("Downloaded a total of {} bytes.", download_size);
+                } 
+            } else {
+                eprintln!("Course with alias {} not found.", course_alias);
             }
         },
 
@@ -143,7 +117,25 @@ fn main() {
             limit,
             offset,
         } => {
-            course_manager.view_course_announcements(&course_alias, limit, offset).unwrap();
+            if let Some(course) = courses.get(&course_alias) {
+                course.view_course_announcements(limit, offset).unwrap();
+            } else {
+                eprintln!("Course with alias {} not found.", course_alias);
+            }
+        },
+
+        Bbcm::Remove {
+            course_alias,
+        } => {
+            if courses.remove(&course_alias).is_none() {
+                eprintln!("Course with alias {} not found.", course_alias);
+            }
+        },
+
+        Bbcm::Reset => {
+            courses.clear();
         }
     }
+
+    manager.save_courses(&courses.into_iter().map(|t| t.1).collect::<Vec<BBCourse>>()[..]);
 }
