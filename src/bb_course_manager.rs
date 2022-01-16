@@ -2,14 +2,14 @@ use std::path::{Path, PathBuf};
 use std::io::{BufRead, Read, Write};
 use std::collections::HashMap;
 
-pub mod blackboard_course;
+pub mod bb_course;
 
 use crate::course::Course;
-use blackboard_course::BBCourse;
-use blackboard_course::predicate_utils;
-use blackboard_course::blackboard_session::{BBSession, input_utils::stdin_trimmed_line};
-use blackboard_course::filename_utils::cookie_filename;
-use blackboard_course::blackboard_content::BBContent;
+use bb_course::BBCourse;
+use bb_course::predicate_utils;
+use bb_course::bb_session::{BBSession, input_utils::stdin_trimmed_line};
+use bb_course::filename_utils::cookie_filename;
+use bb_course::bb_content::BBContent;
 
 
 use json;
@@ -51,7 +51,7 @@ impl BBCourseManager {
         });
 
         // This dependency is weird, but it's important that different courses from the same domain use the same session. 
-        let bb_session = blackboard_course::blackboard_session::BBSession::new(
+        let bb_session = bb_course::bb_session::BBSession::new(
             &domain, 
             &self.work_dir.join(format!("cookies/{}", cookie_filename(&domain)))
         ).expect("Error creating BBSession while registering course");

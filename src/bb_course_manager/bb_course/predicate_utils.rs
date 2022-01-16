@@ -1,5 +1,5 @@
-use super::blackboard_content::BBContent;
-use super::blackboard_content::blackboard_attachment::BBAttachment;
+use super::bb_content::BBContent;
+use super::bb_content::bb_attachment::BBAttachment;
 
 pub fn mimetype_contains(attachment: &BBAttachment, substring: &str) -> bool {
     attachment.mimetype.contains(substring)

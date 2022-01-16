@@ -2,17 +2,17 @@ use std::path::{PathBuf, Path};
 use std::io::Write;
 
 pub mod filename_utils;
-pub mod blackboard_session;
-pub mod blackboard_content;
-pub mod blackboard_announcement;
+pub mod bb_session;
+pub mod bb_content;
+pub mod bb_announcement;
 pub mod predicate_utils;
-use blackboard_content::{BBContent, BBContentHandler};
-use blackboard_announcement::BBAnnouncement;
-use blackboard_content::blackboard_attachment::BBAttachment;
+use bb_content::{BBContent, BBContentHandler};
+use bb_announcement::BBAnnouncement;
+use bb_content::bb_attachment::BBAttachment;
 use filename_utils::{valid_dir_name, valid_filename};
 
 pub struct BBCourse {
-    session: blackboard_session::BBSession,
+    session: bb_session::BBSession,
     course_code: String,
     semester: String,
     alias: String,
@@ -25,7 +25,7 @@ pub struct BBCourse {
 
 impl BBCourse {
     pub fn new(
-        session: blackboard_session::BBSession, // Should be reference to session owned by course manager
+        session: bb_session::BBSession, // Should be reference to session owned by course manager
         course_code: &str,
         semester: &str,
         alias: &str,
@@ -66,7 +66,7 @@ impl BBCourse {
     }
 
     fn download_course_root_contents_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        self.download_course_contents_json(course_id, &[blackboard_content::BBContent::DEFAULT_FIELDS], out_path)
+        self.download_course_contents_json(course_id, &[bb_content::BBContent::DEFAULT_FIELDS], out_path)
     }
     
     fn download_course_announcements_json(&self, course_id: &str, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {

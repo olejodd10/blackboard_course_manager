@@ -1,9 +1,9 @@
-pub mod blackboard_attachment;
+pub mod bb_attachment;
 
 use std::path::Path;
 use std::io::Write;
 use super::{BBCourse, filename_utils::valid_filename, filename_utils::valid_dir_name};
-use blackboard_attachment::BBAttachment;
+use bb_attachment::BBAttachment;
 
 // https://docs.blackboard.com/learn/rest/advanced/contenthandler-datatypes
 #[derive(Debug, PartialEq)]

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 //OBS!! Merk at std::error::Error er en trait, mens std::io::Error er en struct!!
-use blackboard_course_manager::blackboard_course_manager::BBCourseManager;
+use blackboard_course_manager::bb_course_manager::BBCourseManager;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Blackboard Course Manager", about = "A tool for managing Blackboard courses")]
