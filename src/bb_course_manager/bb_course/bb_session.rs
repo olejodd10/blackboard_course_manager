@@ -56,13 +56,7 @@ impl BBSession {
     }
 
     pub fn download_file(&self, url: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        match download::download_file(url, out_path, Some(&self.cookie_jar_path)) {
-            Err(err) => {
-                eprintln!("Error while downloading {:?}:\n{:?}", out_path.file_name().unwrap(), err);
-                Err(err)
-            }
-            other => other,
-        }
+        download::download_file(url, out_path, Some(&self.cookie_jar_path))
     }
 }
 

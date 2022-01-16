@@ -155,8 +155,16 @@ impl<'a> BBContent<'a> {
                 let children_path = out_path.join(&valid_dir_name(&self.title));
                 let mut total_download_size = 0.0;
                 std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
-                for child in self.get_children()? {
-                    total_download_size += child.download_children(content_predicate, attachment_predicate, &children_path, unzip, overwrite)?;
+                match self.get_children() {
+                    Ok(children) => {
+                        for child in children {
+                            total_download_size += child.download_children(content_predicate, attachment_predicate, &children_path, unzip, overwrite)?;
+                        }
+                    },
+                    Err(err) => {
+                        //TODO: Graceful handling only for HTTP 403
+                        eprintln!("Error downloading children for \"{}\": {}", self.title, err);
+                    }
                 }
                 Ok(total_download_size)
             },
