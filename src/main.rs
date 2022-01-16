@@ -8,7 +8,7 @@ use blackboard_course_manager::blackboard_course_manager::BBCourseManager;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Blackboard Course Manager", about = "A tool for managing Blackboard courses")]
-enum Bcm {
+enum Bbcm {
     #[structopt(about="Register new course")]
     Register,
 
@@ -94,93 +94,7 @@ enum Bcm {
             help="Offset announcements",
         )]
         offset: Option<usize>,
-    },
-
-    #[structopt(about="View course content")]
-    Contents {
-        #[structopt(
-            name="course-alias",
-            help="Alias of course",
-        )]
-        course_alias: String,
-
-        #[structopt(
-            short,
-            long,
-            help="Content title filter"
-        )]
-        title: Option<String>, 
-    },
-
-    #[structopt(about="View course content attachments")]
-    Attachments {
-        #[structopt(
-            name="course-alias",
-            help="Alias of course",
-        )]
-        course_alias: String,
-
-        #[structopt(
-            short,
-            long,
-            help="Filename filter"
-        )]
-        filename: Option<String>, 
-        
-        #[structopt(
-            short,
-            long,
-            help="Mimetype filter"
-        )]
-        mimetype: Option<String>,
-    },
-
-    #[structopt(about="Download course content attachments")]
-    DownloadAttachments {
-        #[structopt(
-            name="course-alias",
-            help="Alias of course",
-        )]
-        course_alias: String,
-
-        #[structopt(
-            short,
-            long,
-            help="Content title filter"
-        )]
-        title: Option<String>, 
-        
-        #[structopt(
-            short,
-            long,
-            help="Filename filter"
-        )]
-        filename: Option<String>, 
-        
-        #[structopt(
-            short,
-            long,
-            help="Mimetype filter"
-        )]
-        mimetype: Option<String>,
-        
-        #[structopt(
-            short,
-            long,
-            help="Unzip zip files after download",
-        )]
-        unzip: bool,
-        
-        #[structopt(
-            short,
-            long,
-            help="Overwrite files",
-        )]
-        overwrite: bool,
     }
-
-    //Session
-
 }
 
 fn main() {
@@ -190,28 +104,28 @@ fn main() {
         &std::env::var("BBCM_WORK_DIR").map(|val| PathBuf::from(&val)).unwrap_or_else(|_| std::env::temp_dir().join("bbcm_work"))
     );
 
-    let args = Bcm::from_args();
+    let args = Bbcm::from_args();
 
     match args {
-        Bcm::Register => {
+        Bbcm::Register => {
             course_manager.register_course();
         },
 
-        Bcm::Remove {
+        Bbcm::Remove {
             course_alias,
         } => {
             course_manager.remove_course(&course_alias);
         },
 
-        Bcm::Reset => {
+        Bbcm::Reset => {
             course_manager.remove_all_courses();
         }
 
-        Bcm::Courses => {
+        Bbcm::Courses => {
             course_manager.view_courses();
         },
 
-        Bcm::DownloadTree {
+        Bbcm::DownloadTree {
             course_alias,
             title,
             filename,
@@ -224,42 +138,12 @@ fn main() {
             }
         },
 
-        Bcm::Announcements {
+        Bbcm::Announcements {
             course_alias,
             limit,
             offset,
         } => {
             course_manager.view_course_announcements(&course_alias, limit, offset).unwrap();
-        },
-
-        Bcm::Contents {
-            course_alias,
-            title,
-        } => {
-            course_manager.view_course_content(&course_alias, title).unwrap();
-        },
-
-        Bcm::Attachments {
-            course_alias,
-            filename,
-            mimetype,
-        } => {
-            course_manager.view_course_attachments(&course_alias, filename, mimetype).unwrap();
-        },
-
-        Bcm::DownloadAttachments {
-            course_alias,
-            title,
-            filename,
-            mimetype,
-            unzip,
-            overwrite,
-        } => {
-            if let Ok(download_size) = course_manager.download_course_content_attachments(&course_alias, title, filename, mimetype, unzip, overwrite) {
-                println!("Downloaded a total of {} bytes.", download_size);
-            }
         }
-    
     }
-
 }
