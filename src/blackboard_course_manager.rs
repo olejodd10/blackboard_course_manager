@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::io::{BufRead, Write, Read};
+use std::io::{BufRead, Read, Write};
 use std::collections::HashMap;
 
 pub mod blackboard_course;
@@ -9,7 +9,7 @@ use blackboard_course::BBCourse;
 use blackboard_course::predicate_utils;
 use blackboard_course::blackboard_session::{BBSession, input_utils::stdin_trimmed_line};
 use blackboard_course::filename_utils::cookie_filename;
-use blackboard_course::blackboard_definitions::BBContent;
+use blackboard_course::blackboard_content::BBContent;
 
 
 use json;

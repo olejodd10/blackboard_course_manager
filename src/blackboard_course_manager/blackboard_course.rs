@@ -1,15 +1,15 @@
 use std::path::{PathBuf, Path};
 use std::io::Write;
 
-mod download;
 pub mod filename_utils;
 pub mod blackboard_session;
-pub mod blackboard_definitions;
+pub mod blackboard_content;
+pub mod blackboard_announcement;
 pub mod predicate_utils;
-use blackboard_definitions::{BBAttachment, BBContent, BBAnnouncement, BBContentHandler};
+use blackboard_content::{BBContent, BBContentHandler};
+use blackboard_announcement::BBAnnouncement;
+use blackboard_content::blackboard_attachment::BBAttachment;
 use filename_utils::{valid_dir_name, valid_filename};
-
-pub const DEFAULT_FIELDS: &str = "fields=id,title,contentHandler,links"; // Looks like all contentHandlers have these fields (not attachments, though).
 
 pub struct BBCourse {
     session: blackboard_session::BBSession,
@@ -52,16 +52,6 @@ impl BBCourse {
             id: id.to_string(),
         }
     }
-
-    fn download_file(&self, url: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        match download::download_file(url, out_path, Some(&self.session.cookie_jar_path)) {
-            Err(err) => {
-                eprintln!("Error while downloading {:?}:\n{:?}", out_path.file_name().unwrap(), err);
-                Err(err)
-            }
-            other => other,
-        }
-    }
     
     fn download_course_contents_json(&self, course_id: &str, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents",
@@ -72,24 +62,11 @@ impl BBCourse {
             url.extend(format!("?{}", query_parameters.join("&")).chars());
         }
 
-        self.download_file(&url, out_path)
+        self.session.download_file(&url, out_path)
     }
 
     fn download_course_root_contents_json(&self, course_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        self.download_course_contents_json(course_id, &[DEFAULT_FIELDS], out_path)
-    }
-
-    fn download_content_children_json(&self, course_id: &str, content_id: &str, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/children",
-            self.session.domain,
-            course_id,
-            content_id);
-    
-        if !query_parameters.is_empty() {
-            url.extend(format!("?{}", query_parameters.join("&")).chars());
-        }
-
-        self.download_file(&url, out_path)
+        self.download_course_contents_json(course_id, &[blackboard_content::BBContent::DEFAULT_FIELDS], out_path)
     }
     
     fn download_course_announcements_json(&self, course_id: &str, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
@@ -103,91 +80,14 @@ impl BBCourse {
             url.extend(format!("?{}", query_parameters.join("&")).chars());
         }
 
-        self.download_file(&url, out_path)
-    }
-    
-    fn download_content_attachments_json(&self, course_id: &str, content_id: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        
-        let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments",
-            self.session.domain,
-            course_id,
-            content_id);
-    
-        self.download_file(&url, out_path)
-    }
-
-    // Course content tree
-    fn download_content_attachments(
-        &self, 
-        content: &BBContent, 
-        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
-        out_path: &Path,
-        unzip: bool,
-        overwrite: bool
-    ) -> Result<f64, Box<dyn std::error::Error>> {
-        let content_attachments = self.get_content_attachments(content)?;
-        let mut total_download_size = 0.0;
-        if let Some(attachment_predicate) = attachment_predicate {
-            for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
-                let file_path = out_path.join(&valid_filename(&attachment.filename));
-                total_download_size += self.download_content_attachment(&self.id, &content.id, &attachment.id, &file_path, unzip, overwrite)?;
-            }
-        } else {
-            for attachment in content_attachments {
-                let file_path = out_path.join(&valid_filename(&attachment.filename));
-                total_download_size += self.download_content_attachment(&self.id, &content.id, &attachment.id, &file_path, unzip, overwrite)?;
-            }
-        }
-        Ok(total_download_size)
-    }
-
-    fn download_content_attachment(&self, course_id: &str, content_id: &str, attachment_id: &str, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
-        
-        let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
-        self.session.domain,
-        course_id,
-        content_id,
-        attachment_id);
-        
-        if overwrite || !out_path.exists() {
-            println!("Downloading {:?}", out_path.file_name().unwrap());
-            let download_size = self.download_file(&url, out_path)?;
-            if unzip {
-                let out_dir = out_path.with_extension("");
-                let zip_file = std::fs::File::open(out_path)?;
-                let unzip_result = zip_extract::extract(zip_file, &out_dir, true); // zip_extract explicitly wants &PathBuf
-                if unzip_result.is_ok() {
-                    std::fs::remove_file(out_path)?;
-                } else {
-                    eprintln!("Note: Unzipping of {:?} failed", out_path);
-                }
-            } 
-            Ok(download_size)
-        }  else {
-            println!("Skipping download of {:?}", out_path.file_name().unwrap());
-            Ok(0.0)
-        }
+        self.session.download_file(&url, out_path)
     }
 
     fn get_course_root_content(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
         let root_content_json_filename = "root_content.json";
         let root_content_json_path = self.temp_dir.join(&root_content_json_filename);
         self.download_course_root_contents_json(&self.id, &root_content_json_path)?;
-        BBContent::vec_from_json_results(&root_content_json_path)
-    }
-
-    fn get_content_children(&self, content: &BBContent) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let content_children_json_filename = format!("{}_children.json", valid_dir_name(&content.title));
-        let content_children_json_path = self.temp_dir.join(&content_children_json_filename);
-        self.download_content_children_json(&self.id, &content.id, &[DEFAULT_FIELDS], &content_children_json_path)?;
-        BBContent::vec_from_json_results(&content_children_json_path)
-    }
-
-    fn get_content_attachments(&self, content: &BBContent) -> Result<Vec<BBAttachment>, Box<dyn std::error::Error>> {
-        let attachments_json_filename = format!("{}_attachments.json", content.id);
-        let attachments_json_path = self.temp_dir.join(&attachments_json_filename);
-        self.download_content_attachments_json(&self.id, &content.id, &attachments_json_path)?;
-        BBAttachment::vec_from_json_results(&attachments_json_path)
+        BBContent::vec_from_json_results(&root_content_json_path, &self)
     }
 
     pub fn download_course_content_tree(
@@ -200,57 +100,9 @@ impl BBCourse {
         let mut total_download_size = 0.0;
         // std::fs::create_dir_all(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
         for content in self.get_course_root_content()? {
-            total_download_size += self.download_children(&content, content_predicate, attachment_predicate, &self.tree_dir, unzip, overwrite)?;
+            total_download_size += content.download_children(content_predicate, attachment_predicate, &self.tree_dir, unzip, overwrite)?;
         }
         Ok(total_download_size)
-    }
-
-    fn download_children(&self, 
-        content: &BBContent, 
-        content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
-        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
-        out_path: &Path, 
-        unzip: bool, 
-        overwrite: bool
-    ) -> Result<f64, Box<dyn std::error::Error>> {
-        if let Some(content_predicate) = content_predicate {
-            if !content_predicate(content) {
-                return Ok(0.0);
-            }
-        }
-        match &content.content_handler {
-            handler if blackboard_definitions::ATTACHABLE_CONTENT_HANDLERS.contains(handler) => {
-                let attachments_path = out_path.join(&valid_dir_name(&content.title));
-                std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
-                self.download_content_attachments(content, attachment_predicate, &attachments_path, unzip, overwrite) 
-            },
-            BBContentHandler::XBBFolder => {
-                let children_path = out_path.join(&valid_dir_name(&content.title));
-                let mut total_download_size = 0.0;
-                std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
-                for child in self.get_content_children(content)? {
-                    total_download_size += self.download_children(&child, content_predicate, attachment_predicate, &children_path, unzip, overwrite)?;
-                }
-                Ok(total_download_size)
-            },
-            handler => {
-                eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", content.title, handler);
-                if !content.links.is_empty() {
-                    let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&content.title)));
-                    self.create_links_file(content, &links_file_path)
-                } else {
-                    Ok(0.0)
-                }
-            },
-        }
-    }
-
-    fn create_links_file(&self, content: &BBContent, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        let mut links_file = std::fs::File::create(out_path).expect("Error creating links file");
-        for link in &content.links {
-            writeln!(links_file, "https://{}{}", self.session.domain, link).unwrap();
-        }
-        Ok(links_file.metadata()?.len() as f64)
     }
 
     //Announcements

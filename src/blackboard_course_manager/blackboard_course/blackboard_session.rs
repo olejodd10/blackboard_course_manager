@@ -1,4 +1,5 @@
 pub mod input_utils;
+mod download;
 
 use std::path::{Path, PathBuf};
 use std::io::{Read, Write, BufWriter, BufRead};
@@ -51,6 +52,16 @@ impl BBSession {
             easy.perform().is_ok()
         } else {
             false
+        }
+    }
+
+    pub fn download_file(&self, url: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+        match download::download_file(url, out_path, Some(&self.cookie_jar_path)) {
+            Err(err) => {
+                eprintln!("Error while downloading {:?}:\n{:?}", out_path.file_name().unwrap(), err);
+                Err(err)
+            }
+            other => other,
         }
     }
 }
