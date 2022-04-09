@@ -1,5 +1,3 @@
-use std::path::Path;
-
 pub struct BBAnnouncement {
     pub id: String,
     pub title: String,
@@ -12,8 +10,8 @@ pub struct BBAnnouncement {
 impl BBAnnouncement {
     const VIEW_WIDTH: usize = 120;
 
-    pub fn vec_from_json_results(json_path: &Path) -> Result<Vec<BBAnnouncement>, Box<dyn std::error::Error>> {
-        let json_string = std::fs::read_to_string(&json_path)?;
+    pub fn vec_from_json_results(json: Vec<u8>) -> Result<Vec<BBAnnouncement>, Box<dyn std::error::Error>> {
+        let json_string = std::string::String::from_utf8(json)?;
         let parsed_json = json::parse(&json_string)?;
 
         Ok(parsed_json["results"].members().map(|member| {

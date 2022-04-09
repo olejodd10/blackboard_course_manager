@@ -8,6 +8,7 @@ use cookie_session::CookieSession;
 use bb_course::BBCourse;
 use bb_course::filename_utils::cookie_filename;
 
+// Remove this unnecessary struct. Or rename.
 pub struct BBCourseManager {
     session: CookieSession,
     out_dir: PathBuf,
@@ -28,9 +29,13 @@ impl<'a> BBCourseManager {
 
     pub fn load_courses(&'a self) -> Vec<BBCourse<'a>> {
         let json_path = self.work_dir.join("courses.json");
-        let mut courses_file = std::fs::File::open(&json_path).expect("Error opening courses json");
         let mut json_string = String::new();
-        courses_file.read_to_string(&mut json_string).expect("Error reading courses file");
+        if json_path.exists() {
+            let mut courses_file = std::fs::File::open(&json_path).expect("Error opening courses json");
+            courses_file.read_to_string(&mut json_string).expect("Error reading courses file");
+        } else {
+            json_string = String::from("[]");
+        };
         let courses_json = json::parse(&json_string).expect("Error parsing courses json");
         if let json::JsonValue::Array(courses) = courses_json {
             courses.into_iter().map(|course| {
@@ -40,7 +45,6 @@ impl<'a> BBCourseManager {
                     &course["semester"].to_string(),
                     &course["alias"].to_string(),
                     Path::new(&course["out_dir"].to_string()),
-                    Path::new(&course["temp_dir"].to_string()),
                     &course["id"].to_string(),
                 )
             }).collect()

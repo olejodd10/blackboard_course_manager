@@ -54,6 +54,10 @@ impl CookieSession {
     pub fn download_file(&self, url: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
         download::download_file(url, out_path, Some(&self.cookie_jar_path))
     }
+
+    pub fn download_bytes(&self, url: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        download::download_bytes(url, Some(&self.cookie_jar_path))
+    }
 }
 
 

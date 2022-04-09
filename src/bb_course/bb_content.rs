@@ -80,8 +80,8 @@ pub struct BBContent<'a, 'b> {
 impl<'a, 'b> BBContent<'a, 'b> {
     pub const DEFAULT_FIELDS: &'static str = "fields=id,title,contentHandler,links"; // Looks like all contentHandlers have these fields (not attachments, though).
 
-    pub fn vec_from_json_results(json_path: &Path, course: &'a BBCourse<'b>) -> Result<Vec<BBContent<'a, 'b>>, Box<dyn std::error::Error>> {
-        let json_string = std::fs::read_to_string(&json_path)?;
+    pub fn vec_from_json_results(json: Vec<u8>, course: &'a BBCourse<'b>) -> Result<Vec<BBContent<'a, 'b>>, Box<dyn std::error::Error>> {
+        let json_string = std::string::String::from_utf8(json)?;
         let parsed_json = json::parse(&json_string)?;
 
         Ok(parsed_json["results"].members().map(|m1| {
@@ -96,30 +96,26 @@ impl<'a, 'b> BBContent<'a, 'b> {
     }
 
     fn get_children(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
-        let content_children_json_filename = format!("{}_children.json", valid_dir_name(&self.title));
-        let content_children_json_path = self.course.temp_dir.join(&content_children_json_filename);
-        self.download_children_json(&[BBContent::DEFAULT_FIELDS], &content_children_json_path)?;
-        BBContent::vec_from_json_results(&content_children_json_path, self.course)
+        let json = self.download_children_json(&[BBContent::DEFAULT_FIELDS])?;
+        BBContent::vec_from_json_results(json, self.course)
     }
 
     fn get_attachments(&self) -> Result<Vec<BBAttachment>, Box<dyn std::error::Error>> {
-        let attachments_json_filename = format!("{}_attachments.json", self.id);
-        let attachments_json_path = self.course.temp_dir.join(&attachments_json_filename);
-        self.download_attachments_json(&attachments_json_path)?;
-        BBAttachment::vec_from_json_results(&attachments_json_path, self)
+        let json = self.download_attachments_json()?;
+        BBAttachment::vec_from_json_results(json, self)
     }
 
-    fn download_attachments_json(&self, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+    fn download_attachments_json(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments",
             self.course.manager.session.domain,
             self.course.id,
             self.id);
     
-        self.course.manager.session.download_file(&url, out_path)
+        self.course.manager.session.download_bytes(&url)
     }
     
-    fn download_children_json(&self, query_parameters: &[&str], out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+    fn download_children_json(&self, query_parameters: &[&str]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/children",
             self.course.manager.session.domain,
             self.course.id,
@@ -129,7 +125,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
             url.extend(format!("?{}", query_parameters.join("&")).chars());
         }
 
-        self.course.manager.session.download_file(&url, out_path)
+        self.course.manager.session.download_bytes(&url)
     }
 
     pub fn download_children(&self, 

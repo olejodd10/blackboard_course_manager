@@ -9,8 +9,8 @@ pub struct BBAttachment<'a, 'b, 'c> {
 }
 
 impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
-    pub fn vec_from_json_results(json_path: &Path, content: &'a BBContent<'b, 'c>) -> Result<Vec<BBAttachment<'a, 'b, 'c>>, Box<dyn std::error::Error>> {
-        let json_string = std::fs::read_to_string(&json_path)?;
+    pub fn vec_from_json_results(json: Vec<u8>, content: &'a BBContent<'b, 'c>) -> Result<Vec<BBAttachment<'a, 'b, 'c>>, Box<dyn std::error::Error>> {
+        let json_string = std::string::String::from_utf8(json)?;
         let parsed_json = json::parse(&json_string)?;
 
         Ok(parsed_json["results"].members().map(|member| {
@@ -44,7 +44,7 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
                 } else {
                     eprintln!("Note: Unzipping of {:?} failed", out_path);
                 }
-            } 
+            }
             Ok(download_size)
         }  else {
             println!("Skipping download of {:?}", out_path.file_name().unwrap());

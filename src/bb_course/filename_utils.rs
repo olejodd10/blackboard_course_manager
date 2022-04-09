@@ -21,9 +21,9 @@ const BANNED_DIR_NAME_CHARS: [char; 13] = [
     '>',
 ];
 
-fn safe_truncate(s: &mut String, new_len: usize) {
-    *s = s.chars().take(new_len).collect();
-}
+// fn safe_truncate(s: &mut String, new_len: usize) {
+//     *s = s.chars().take(new_len).collect();
+// }
 
 pub fn valid_dir_name(s: &str) -> String {
     // let mut s = s.replace(&BANNED_DIR_NAME_CHARS[..], "_");

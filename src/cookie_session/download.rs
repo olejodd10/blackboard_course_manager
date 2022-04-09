@@ -34,3 +34,29 @@ pub fn download_file(file_url: &str, out_path: &Path, cookie_file_path: Option<&
     
     Ok(easy.download_size()?)
 }
+
+pub fn download_bytes(file_url: &str, cookie_file_path: Option<&Path>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+
+    let mut buf = Vec::new();
+    let mut easy = Easy::new();
+
+    easy.url(file_url)?;
+
+    if let Some(cookie_file_path) = cookie_file_path {
+        easy.cookie_file(cookie_file_path).unwrap();
+    }
+
+    easy.follow_location(true)?; //Viktig fordi BB redirecter (302)
+    easy.fail_on_error(true)?; //Viktig for å faile på 401
+
+    { // Scope to make transfer drop borrow of buf
+        let mut transfer = easy.transfer();
+        transfer.write_function(|data| { 
+            buf.extend_from_slice(data);
+            Ok(data.len())
+        })?;
+        transfer.perform()?;
+    }
+    
+    Ok(buf)
+}
