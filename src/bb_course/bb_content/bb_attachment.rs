@@ -1,5 +1,6 @@
 use super::BBContent;
 use std::path::Path;
+use std::thread::JoinHandle;
 
 pub struct BBAttachment<'a, 'b, 'c> {
     pub content: &'a BBContent<'b, 'c>,
@@ -24,7 +25,7 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
     }
 
     
-    pub fn download(&self, out_path: &Path, unzip: bool, overwrite: bool) -> Result<f64, Box<dyn std::error::Error>> {
+    pub fn download(&self, out_path: &Path, unzip: bool, overwrite: bool, threads: &mut Vec<JoinHandle<f64>>) -> Result<(), Box<dyn std::error::Error>> {
         
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
         self.content.course.manager.session.domain,
@@ -32,24 +33,29 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
         self.content.id,
         self.id);
         
-        if overwrite || !out_path.exists() {
-            println!("Downloading {:?}", out_path.file_name().unwrap());
-            let download_size = self.content.course.manager.session.download_file(&url, out_path)?;
-            if unzip {
-                let out_dir = out_path.with_extension("");
-                let zip_file = std::fs::File::open(out_path)?;
-                let unzip_result = zip_extract::extract(zip_file, &out_dir, true); // zip_extract explicitly wants &PathBuf
-                if unzip_result.is_ok() {
-                    std::fs::remove_file(out_path)?;
-                } else {
-                    eprintln!("Note: Unzipping of {:?} failed", out_path);
+        let session = self.content.course.manager.session.clone();
+        let out_path = std::path::PathBuf::from(out_path);
+        threads.push(std::thread::spawn(move || {
+            if overwrite || !out_path.exists() {
+                println!("Downloading {:?}", out_path.file_name().unwrap());
+                let download_size = session.download_file(&url, &out_path).unwrap();
+                if unzip {
+                    let out_dir = out_path.with_extension("");
+                    let zip_file = std::fs::File::open(&out_path).unwrap();
+                    let unzip_result = zip_extract::extract(zip_file, &out_dir, true); // zip_extract explicitly wants &PathBuf
+                    if unzip_result.is_ok() {
+                        std::fs::remove_file(&out_path).unwrap();
+                    } else {
+                        eprintln!("Note: Unzipping of {:?} failed", out_path);
+                    }
                 }
+                download_size
+            }  else {
+                println!("Skipping download of {:?}", out_path.file_name().unwrap());
+                0.0
             }
-            Ok(download_size)
-        }  else {
-            println!("Skipping download of {:?}", out_path.file_name().unwrap());
-            Ok(0.0)
-        }
+        }));
+        Ok(())
     }
 
 

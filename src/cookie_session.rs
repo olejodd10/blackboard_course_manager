@@ -14,7 +14,7 @@ impl Handler for Collector {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CookieSession {
     pub domain: String,
     pub cookie_jar_path: PathBuf,

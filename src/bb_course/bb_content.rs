@@ -2,6 +2,7 @@ pub mod bb_attachment;
 
 use std::path::Path;
 use std::io::Write;
+use std::thread::JoinHandle;
 use super::{BBCourse, filename_utils::valid_filename, filename_utils::valid_dir_name};
 use bb_attachment::BBAttachment;
 
@@ -133,27 +134,27 @@ impl<'a, 'b> BBContent<'a, 'b> {
         attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path, 
         unzip: bool, 
-        overwrite: bool
-    ) -> Result<f64, Box<dyn std::error::Error>> {
+        overwrite: bool,
+        threads: &mut Vec<JoinHandle<f64>>
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(content_predicate) = content_predicate {
             if !content_predicate(self) {
-                return Ok(0.0);
+                return Ok(());
             }
         }
         match &self.content_handler {
             handler if ATTACHABLE_CONTENT_HANDLERS.contains(handler) => {
                 let attachments_path = out_path.join(&valid_dir_name(&self.title));
                 std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
-                self.download_attachments(attachment_predicate, &attachments_path, unzip, overwrite) 
+                self.download_attachments(attachment_predicate, &attachments_path, unzip, overwrite, threads)
             },
             BBContentHandler::XBBFolder => {
                 let children_path = out_path.join(&valid_dir_name(&self.title));
-                let mut total_download_size = 0.0;
                 std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
                 match self.get_children() {
                     Ok(children) => {
                         for child in children {
-                            total_download_size += child.download_children(content_predicate, attachment_predicate, &children_path, unzip, overwrite)?;
+                            child.download_children(content_predicate, attachment_predicate, &children_path, unzip, overwrite, threads)?;
                         }
                     },
                     Err(err) => {
@@ -161,15 +162,16 @@ impl<'a, 'b> BBContent<'a, 'b> {
                         eprintln!("Error downloading children for \"{}\": {}", self.title, err);
                     }
                 }
-                Ok(total_download_size)
+                Ok(())
             },
             handler => {
                 eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, handler);
                 if !self.links.is_empty() {
                     let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&self.title)));
-                    self.create_links_file(&links_file_path)
+                    self.create_links_file(&links_file_path)?;
+                    Ok(())
                 } else {
-                    Ok(0.0)
+                    Ok(())
                 }
             },
         }
@@ -181,22 +183,22 @@ impl<'a, 'b> BBContent<'a, 'b> {
         attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path,
         unzip: bool,
-        overwrite: bool
-    ) -> Result<f64, Box<dyn std::error::Error>> {
+        overwrite: bool,
+        threads: &mut Vec<JoinHandle<f64>>
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let content_attachments = self.get_attachments()?;
-        let mut total_download_size = 0.0;
         if let Some(attachment_predicate) = attachment_predicate {
             for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
                 let file_path = out_path.join(&valid_filename(&attachment.filename));
-                total_download_size += attachment.download(&file_path, unzip, overwrite)?;
+                attachment.download(&file_path, unzip, overwrite, threads)?;
             }
         } else {
             for attachment in content_attachments {
                 let file_path = out_path.join(&valid_filename(&attachment.filename));
-                total_download_size += attachment.download(&file_path, unzip, overwrite)?;
+                attachment.download(&file_path, unzip, overwrite, threads)?;
             }
         }
-        Ok(total_download_size)
+        Ok(())
     }
 
     fn create_links_file(&self, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {

@@ -108,11 +108,12 @@ impl<'a> BBCourse<'a> {
         unzip: bool, 
         overwrite: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
-        let mut total_download_size = 0.0;
+        let mut threads = Vec::new();
         // std::fs::create_dir_all(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
         for content in self.get_course_root_content()? {
-            total_download_size += content.download_children(content_predicate, attachment_predicate, &self.out_dir, unzip, overwrite)?;
+            content.download_children(content_predicate, attachment_predicate, &self.out_dir, unzip, overwrite, &mut threads)?;
         }
+        let total_download_size = threads.into_iter().map(|t| t.join().expect("Failed to join thread")).sum();
         Ok(total_download_size)
     }
 

@@ -105,7 +105,7 @@ fn main() {
         } => {
             if let Some(course) = courses.get(&course_alias) {
                 if let Ok(download_size) = course.download_course_content_tree(None, None, unzip, overwrite) {
-                    println!("Downloaded a total of {} bytes.", download_size);
+                    println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
                 } 
             } else {
                 eprintln!("Course with alias {} not found.", course_alias);
