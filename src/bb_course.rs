@@ -140,7 +140,7 @@ impl<'a> BBCourse<'a> {
             println!("No announcements found.")
         } else {
             for announcement in self.get_course_announcements(limit, offset)? {
-                announcement.view();
+                announcement.view_with_name(self.manager);
             }
         }
         Ok(())

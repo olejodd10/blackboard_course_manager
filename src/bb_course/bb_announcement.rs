@@ -1,3 +1,8 @@
+mod bb_user;
+
+use bb_user::BBUser;
+use crate::BBCourseManager;
+
 pub struct BBAnnouncement {
     pub id: String,
     pub title: String,
@@ -31,6 +36,18 @@ impl BBAnnouncement {
             "*".repeat(BBAnnouncement::VIEW_WIDTH),
             self.title,
             self.creator,
+            self.created,
+            self.modified,
+            "-".repeat(BBAnnouncement::VIEW_WIDTH),
+            html2text::from_read(self.body.as_bytes(), BBAnnouncement::VIEW_WIDTH), 
+        );
+    }
+
+    pub fn view_with_name(&self, manager: &BBCourseManager) {
+        println!("{}\nTITLE: {}\nCREATOR: {}\nCREATED: {}\nMODIFIED: {}\n{}\n{}\n",
+            "*".repeat(BBAnnouncement::VIEW_WIDTH),
+            self.title,
+            BBUser::name_by_id(manager, &self.creator).expect("Failed to get announcement creator name"),
             self.created,
             self.modified,
             "-".repeat(BBAnnouncement::VIEW_WIDTH),
