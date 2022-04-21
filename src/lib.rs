@@ -19,7 +19,7 @@ impl<'a> BBCourseManager {
     pub fn new(domain: &str, out_dir: &Path, work_dir: &Path) -> BBCourseManager {
         std::fs::create_dir_all(out_dir).expect("Error creating BBCourseManager out_dir");
         std::fs::create_dir_all(work_dir).expect("Error creating BBCourseManager work_dir");
-        let cookie_jar_path = work_dir.join(format!("cookies/{}", cookie_filename(domain)));
+        let cookie_jar_path = work_dir.join(format!("cookies\\{}", cookie_filename(domain)));
         BBCourseManager {
             session: CookieSession::new(domain, cookie_jar_path.as_ref()).unwrap(),
             out_dir: out_dir.to_path_buf(),
@@ -65,5 +65,16 @@ impl<'a> BBCourseManager {
         }
         let mut courses_file = std::fs::File::create(out_path).expect("Error creating courses file path");
         courses_file.write_all(json_dump.as_bytes()).expect("Error writing to courses file");
+    }
+
+    pub fn download_courses_json(&self, query_parameters: &[&str]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let mut url = format!("https://{}/learn/api/public/v3/courses",
+            self.session.domain);
+        
+        if !query_parameters.is_empty() {
+            url.extend(format!("?{}", query_parameters.join("&")).chars());
+        }
+
+        self.session.download_bytes(&url)
     }
 }

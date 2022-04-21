@@ -29,7 +29,7 @@ impl<'a> BBCourse<'a> {
         out_dir: &Path,
         id: &str
     ) -> BBCourse<'a> {
-        std::fs::create_dir_all(&out_dir).expect("Error creating base folder");
+        std::fs::create_dir_all(&out_dir).expect("Error creating base folder"); // This is a bit ugly. An init function would be better.
         BBCourse {
             manager,
             course_code: course_code.to_string(),
@@ -38,6 +38,15 @@ impl<'a> BBCourse<'a> {
             out_dir: out_dir.to_path_buf(),
             id: id.to_string(),
         }
+    }
+
+    fn ids_and_names_from_json_results(json: Vec<u8>) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+        let json_string = std::string::String::from_utf8(json)?;
+        let parsed_json = json::parse(&json_string)?;
+
+        Ok(parsed_json["results"].members().map(|member| {
+            (member["id"].to_string(), member["name"].to_string())
+        }).collect())
     }
 
     pub fn register(manager: &BBCourseManager) -> BBCourse {
@@ -49,11 +58,10 @@ impl<'a> BBCourse<'a> {
             stdin_trimmed_line()
         });
 
-        //TODO: Replace with automatic fetch
-        println!("Please enter BlackBoard course id (format: _24810_1):");
-        let id = stdin_trimmed_line();
+        let courses_json = manager.download_courses_json(&[&format!("courseId={}%{}", course_code, semester)]).expect("Error: Could not download courses json");
+        let (id, name) = BBCourse::ids_and_names_from_json_results(courses_json).expect("Error: Could not parse courses json").first().expect("Error: No matching course found").to_owned();
 
-        println!("Please enter an alias for the new course:");
+        println!("Found course \"{}\".\nPlease enter an alias for the new course:", name);
         let alias = stdin_trimmed_line();
 
         BBCourse::new(
@@ -61,7 +69,7 @@ impl<'a> BBCourse<'a> {
             &course_code,
             &semester,
             &alias,
-            &manager.out_dir.join(format!("{}\\{}", semester, alias)),
+            &manager.out_dir.join(format!("bbcm_{}\\{}", semester, alias)),
             &id
         )
     }
