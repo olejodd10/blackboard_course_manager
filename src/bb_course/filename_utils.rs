@@ -1,8 +1,9 @@
 // const ALLOWED_NAME_LENGTH: usize = 20; // File creation causes error if absolute file path exceeds ~255-260 characters
 
-const BANNED_FILENAME_CHARS: [char; 2] = [
+const BANNED_FILENAME_CHARS: [char; 3] = [
     '/',
     '\\',
+    '?'
 ];
 
 const BANNED_DIR_NAME_CHARS: [char; 13] = [

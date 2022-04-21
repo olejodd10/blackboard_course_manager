@@ -1,5 +1,6 @@
 use super::BBContent;
 use std::path::Path;
+use std::io::Cursor;
 use std::thread::JoinHandle;
 
 pub struct BBAttachment<'a, 'b, 'c> {
@@ -35,32 +36,29 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
         
         let session = self.content.course.manager.session.clone();
         let out_path = std::path::PathBuf::from(out_path);
+        let is_zip = self.mimetype == "application/zip";
         threads.push(std::thread::spawn(move || {
-            if overwrite || !out_path.exists() {
-                println!("Downloading {:?}", out_path.file_name().unwrap());
-                let download_size = session.download_file(&url, &out_path).unwrap();
-                if unzip {
-                    let out_dir = out_path.with_extension("");
-                    let zip_file = std::fs::File::open(&out_path).unwrap();
-                    let unzip_result = zip_extract::extract(zip_file, &out_dir, true); // zip_extract explicitly wants &PathBuf
-                    if unzip_result.is_ok() {
-                        std::fs::remove_file(&out_path).unwrap();
-                    } else {
-                        eprintln!("Note: Unzipping of {:?} failed", out_path);
-                    }
+            if is_zip && unzip && (overwrite || !out_path.with_extension("").exists()) { 
+                println!("Downloading and unzipping {:?}", out_path.file_name().unwrap());
+                let bytes = session.download_bytes(&url).unwrap();
+                let download_size = bytes.len() as f64;
+                let out_dir = out_path.with_extension("");
+                let unzip_result = zip_extract::extract(Cursor::new(bytes), &out_dir, true); // zip_extract explicitly wants &PathBuf
+                if unzip_result.is_ok() { 
+                    download_size // Consider returning size of unzipped folder
+                } else {
+                    eprintln!("Note: Unzipping of {:?} failed", out_path);
+                    0.0
                 }
-                download_size
-            }  else {
+            } else if overwrite || !out_path.exists() {
+                println!("Downloading {:?}", out_path.file_name().unwrap());
+                session.download_file(&url, &out_path).unwrap()
+            } else {
                 println!("Skipping download of {:?}", out_path.file_name().unwrap());
                 0.0
             }
         }));
         Ok(())
-    }
-
-
-    pub fn is_zip(&self) -> bool {
-        self.mimetype == "application/zip"
     }
 
     pub fn view(&self) {
