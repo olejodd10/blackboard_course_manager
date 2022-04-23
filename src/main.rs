@@ -107,7 +107,7 @@ fn main() {
             overwrite,
         } => {
             if let Some(course) = courses.get_mut(&course_alias) {
-                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite) {
+                if let Ok(download_size) = course.download_course_content_tree(overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
                     course.last_tree_download = time_utils::now();
                 } 
@@ -121,7 +121,7 @@ fn main() {
         } => {
             for (alias, course) in &mut courses {
                 println!("Downloading tree for {}.", alias);
-                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite) {
+                if let Ok(download_size) = course.download_course_content_tree(overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
                     course.last_tree_download = time_utils::now();
                 } 

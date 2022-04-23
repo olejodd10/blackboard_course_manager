@@ -133,24 +133,17 @@ impl<'a, 'b> BBContent<'a, 'b> {
     }
 
     pub fn download_children(&self, 
-        content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
-        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path, 
         overwrite: bool,
         threads: &mut Vec<JoinHandle<f64>>
     ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(content_predicate) = content_predicate {
-            if !content_predicate(self) {
-                return Ok(());
-            }
-        }
         match &self.content_handler {
             handler if ATTACHABLE_CONTENT_HANDLERS.contains(handler) => {
                 let maybe_updated = time_utils::is_more_recent(&self.modified, &self.course.last_tree_download);
                 if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
                     let attachments_path = out_path.join(&valid_dir_name(&self.title));
                     std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
-                    self.download_attachments(attachment_predicate, &attachments_path, threads)
+                    self.download_attachments(&attachments_path, threads)
                 } else {
                     Ok(())
                 }
@@ -162,7 +155,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
                 match self.get_children() {
                     Ok(children) => {
                         for child in children {
-                            child.download_children(content_predicate, attachment_predicate, &children_path, overwrite, threads)?;
+                            child.download_children(&children_path, overwrite, threads)?;
                         }
                     },
                     Err(err) => {
@@ -189,21 +182,13 @@ impl<'a, 'b> BBContent<'a, 'b> {
     // Course content tree
     fn download_attachments(
         &self, 
-        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path,
         threads: &mut Vec<JoinHandle<f64>>
     ) -> Result<(), Box<dyn std::error::Error>> {
         let content_attachments = self.get_attachments()?;
-        if let Some(attachment_predicate) = attachment_predicate {
-            for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
-                let file_path = out_path.join(&valid_filename(&attachment.filename));
-                attachment.download(&file_path, threads)?;
-            }
-        } else {
-            for attachment in content_attachments {
-                let file_path = out_path.join(&valid_filename(&attachment.filename));
-                attachment.download(&file_path, threads)?;
-            }
+        for attachment in content_attachments {
+            let file_path = out_path.join(&valid_filename(&attachment.filename));
+            attachment.download(&file_path, threads)?;
         }
         Ok(())
     }

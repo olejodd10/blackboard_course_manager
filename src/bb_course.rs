@@ -8,7 +8,6 @@ pub mod predicate_utils;
 use super::BBCourseManager;
 use bb_content::BBContent;
 use bb_announcement::BBAnnouncement;
-use bb_content::bb_attachment::BBAttachment;
 use input_utils::stdin_trimmed_line;
 
 pub struct BBCourse<'a> {
@@ -115,14 +114,12 @@ impl<'a> BBCourse<'a> {
 
     pub fn download_course_content_tree(
         &self, 
-        content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
-        attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         overwrite: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
         let mut threads = Vec::new();
         // std::fs::create_dir_all(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
         for content in self.get_course_root_content()? {
-            content.download_children(content_predicate, attachment_predicate, &self.out_dir, overwrite, &mut threads)?;
+            content.download_children(&self.out_dir, overwrite, &mut threads)?;
         }
         let total_download_size = threads.into_iter().map(|t| t.join().expect("Failed to join thread")).sum();
         Ok(total_download_size)
