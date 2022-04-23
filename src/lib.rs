@@ -46,6 +46,7 @@ impl<'a> BBCourseManager {
                     &course["alias"].to_string(),
                     Path::new(&course["out_dir"].to_string()),
                     &course["id"].to_string(),
+                    &course["last_tree_download"].to_string(),
                 )
             }).collect()
         } else {

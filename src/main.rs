@@ -7,6 +7,7 @@ use structopt::StructOpt;
 //OBS!! Merk at std::error::Error er en trait, mens std::io::Error er en struct!!
 use blackboard_course_manager::BBCourseManager;
 use blackboard_course_manager::bb_course::BBCourse;
+use blackboard_course_manager::bb_course::bb_content::time_utils;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Blackboard Course Manager", about = "A tool for managing Blackboard courses")]
@@ -18,7 +19,7 @@ enum Bbcm {
     Courses,
 
     #[structopt(about="Download course file tree")]
-    DownloadTree {
+    Tree {
         #[structopt(
             name="course-alias",
             help="Alias of course",
@@ -28,16 +29,33 @@ enum Bbcm {
         #[structopt(
             short,
             long,
-            help="Unzip zip files after download",
+            help="Force download of non-updated content",
         )]
-        unzip: bool,
-        
+        overwrite: bool,
+
         #[structopt(
             short,
             long,
-            help="Overwrite files",
+            help="Unzip zip files after download",
+        )]
+        unzip: bool,
+    },
+
+    #[structopt(about="Download course file trees for all registered courses")]
+    Trees {
+        #[structopt(
+            short,
+            long,
+            help="Force download of non-updated content",
         )]
         overwrite: bool,
+
+        #[structopt(
+            short,
+            long,
+            help="Unzip zip files after download",
+        )]
+        unzip: bool,
     },
 
     #[structopt(about="View course announcements")]
@@ -98,18 +116,32 @@ fn main() {
             }
         },
 
-        Bbcm::DownloadTree {
+        Bbcm::Tree {
             course_alias,
-            unzip,
             overwrite,
+            unzip,
         } => {
-            if let Some(course) = courses.get(&course_alias) {
-                if let Ok(download_size) = course.download_course_content_tree(None, None, unzip, overwrite) {
+            if let Some(course) = courses.get_mut(&course_alias) {
+                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite, unzip) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
+                    course.last_tree_download = time_utils::now();
                 } 
             } else {
                 eprintln!("Course with alias {} not found.", course_alias);
             }
+        },
+
+        Bbcm::Trees {
+            overwrite,
+            unzip,
+        } => {
+            for (alias, course) in &mut courses {
+                println!("Downloading tree for {}.", alias);
+                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite, unzip) {
+                    println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
+                    course.last_tree_download = time_utils::now();
+                } 
+            } 
         },
 
         Bbcm::Announcements {

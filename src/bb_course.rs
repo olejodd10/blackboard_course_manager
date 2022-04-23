@@ -18,6 +18,7 @@ pub struct BBCourse<'a> {
     pub alias: String,
     out_dir: PathBuf,
     id: String,
+    pub last_tree_download: String,
 }
 
 impl<'a> BBCourse<'a> {
@@ -27,7 +28,8 @@ impl<'a> BBCourse<'a> {
         semester: &str,
         alias: &str,
         out_dir: &Path,
-        id: &str
+        id: &str,
+        last_tree_download: &str
     ) -> BBCourse<'a> {
         std::fs::create_dir_all(&out_dir).expect("Error creating base folder"); // This is a bit ugly. An init function would be better.
         BBCourse {
@@ -37,6 +39,7 @@ impl<'a> BBCourse<'a> {
             alias: alias.to_string(),
             out_dir: out_dir.to_path_buf(),
             id: id.to_string(),
+            last_tree_download: last_tree_download.to_string(),
         }
     }
 
@@ -70,7 +73,8 @@ impl<'a> BBCourse<'a> {
             &semester,
             &alias,
             &manager.out_dir.join(format!("bbcm_{}\\{}", semester, alias)),
-            &id
+            &id,
+            ""
         )
     }
         
@@ -113,13 +117,13 @@ impl<'a> BBCourse<'a> {
         &self, 
         content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
         attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
-        unzip: bool, 
-        overwrite: bool
+        overwrite: bool,
+        unzip: bool
     ) -> Result<f64, Box<dyn std::error::Error>> {
         let mut threads = Vec::new();
         // std::fs::create_dir_all(&self.tree_dir).expect("Error creating tree dir"); //Hvorfor klagde ikke denne når jeg hadde "?"?
         for content in self.get_course_root_content()? {
-            content.download_children(content_predicate, attachment_predicate, &self.out_dir, unzip, overwrite, &mut threads)?;
+            content.download_children(content_predicate, attachment_predicate, &self.out_dir, overwrite, unzip, &mut threads)?;
         }
         let total_download_size = threads.into_iter().map(|t| t.join().expect("Failed to join thread")).sum();
         Ok(total_download_size)
@@ -177,6 +181,7 @@ impl<'a> std::convert::From<&BBCourse<'a>> for json::JsonValue {
             alias: course.alias.clone(),
             out_dir: course.out_dir.as_os_str().to_str().unwrap(),
             id: course.id.clone(),
+            last_tree_download: course.last_tree_download.clone(),
         }
     }
 }

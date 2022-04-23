@@ -26,7 +26,7 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
     }
 
     
-    pub fn download(&self, out_path: &Path, unzip: bool, overwrite: bool, threads: &mut Vec<JoinHandle<f64>>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn download(&self, out_path: &Path, unzip: bool, threads: &mut Vec<JoinHandle<f64>>) -> Result<(), Box<dyn std::error::Error>> {
         
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
         self.content.course.manager.session.domain,
@@ -38,7 +38,7 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
         let out_path = std::path::PathBuf::from(out_path);
         let is_zip = self.mimetype == "application/zip";
         threads.push(std::thread::spawn(move || {
-            if is_zip && unzip && (overwrite || !out_path.with_extension("").exists()) { 
+            if is_zip && unzip { 
                 println!("Downloading and unzipping {:?}", out_path.file_name().unwrap());
                 let bytes = session.download_bytes(&url).unwrap();
                 let download_size = bytes.len() as f64;
@@ -50,12 +50,9 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
                     eprintln!("Note: Unzipping of {:?} failed", out_path);
                     0.0
                 }
-            } else if overwrite || !out_path.exists() {
+            } else {
                 println!("Downloading {:?}", out_path.file_name().unwrap());
                 session.download_file(&url, &out_path).unwrap()
-            } else {
-                println!("Skipping download of {:?}", out_path.file_name().unwrap());
-                0.0
             }
         }));
         Ok(())

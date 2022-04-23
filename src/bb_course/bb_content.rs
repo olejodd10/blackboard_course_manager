@@ -1,4 +1,5 @@
 pub mod bb_attachment;
+pub mod time_utils;
 
 use std::path::Path;
 use std::io::Write;
@@ -74,12 +75,13 @@ pub struct BBContent<'a, 'b> {
     pub course: &'a BBCourse<'b>,
     pub id: String,
     pub title: String,
+    pub modified: String,
     pub content_handler: BBContentHandler,
     pub links: Vec<String>, 
 }
 
 impl<'a, 'b> BBContent<'a, 'b> {
-    pub const DEFAULT_FIELDS: &'static str = "fields=id,title,contentHandler,links"; // Looks like all contentHandlers have these fields (not attachments, though).
+    pub const DEFAULT_FIELDS: &'static str = "fields=id,title,modified,contentHandler,links"; // Looks like all contentHandlers have these fields (not attachments, though).
 
     pub fn vec_from_json_results(json: Vec<u8>, course: &'a BBCourse<'b>) -> Result<Vec<BBContent<'a, 'b>>, Box<dyn std::error::Error>> {
         let json_string = std::string::String::from_utf8(json)?;
@@ -90,6 +92,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
                 course,
                 id: m1["id"].to_string(),
                 title: m1["title"].to_string(),
+                modified: m1["modified"].to_string(),
                 content_handler: BBContentHandler::new(&m1["contentHandler"]["id"].to_string()),
                 links: m1["links"].members().map(|m2| m2["href"].to_string()).collect(),
             }
@@ -133,8 +136,8 @@ impl<'a, 'b> BBContent<'a, 'b> {
         content_predicate: Option<&dyn Fn(&BBContent) -> bool>, 
         attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path, 
-        unzip: bool, 
         overwrite: bool,
+        unzip: bool, 
         threads: &mut Vec<JoinHandle<f64>>
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(content_predicate) = content_predicate {
@@ -144,9 +147,14 @@ impl<'a, 'b> BBContent<'a, 'b> {
         }
         match &self.content_handler {
             handler if ATTACHABLE_CONTENT_HANDLERS.contains(handler) => {
-                let attachments_path = out_path.join(&valid_dir_name(&self.title));
-                std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
-                self.download_attachments(attachment_predicate, &attachments_path, unzip, overwrite, threads)
+                let maybe_updated = time_utils::is_more_recent(&self.modified, &self.course.last_tree_download);
+                if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
+                    let attachments_path = out_path.join(&valid_dir_name(&self.title));
+                    std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
+                    self.download_attachments(attachment_predicate, &attachments_path, unzip, threads)
+                } else {
+                    Ok(())
+                }
             },
             BBContentHandler::XBBFolder => {
                 let children_path = out_path.join(&valid_dir_name(&self.title));
@@ -154,7 +162,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
                 match self.get_children() {
                     Ok(children) => {
                         for child in children {
-                            child.download_children(content_predicate, attachment_predicate, &children_path, unzip, overwrite, threads)?;
+                            child.download_children(content_predicate, attachment_predicate, &children_path, overwrite, unzip, threads)?;
                         }
                     },
                     Err(err) => {
@@ -183,19 +191,18 @@ impl<'a, 'b> BBContent<'a, 'b> {
         attachment_predicate: Option<&dyn Fn(&BBAttachment) -> bool>,
         out_path: &Path,
         unzip: bool,
-        overwrite: bool,
         threads: &mut Vec<JoinHandle<f64>>
     ) -> Result<(), Box<dyn std::error::Error>> {
         let content_attachments = self.get_attachments()?;
         if let Some(attachment_predicate) = attachment_predicate {
             for attachment in content_attachments.into_iter().filter(|attachment| attachment_predicate(attachment)) {
                 let file_path = out_path.join(&valid_filename(&attachment.filename));
-                attachment.download(&file_path, unzip, overwrite, threads)?;
+                attachment.download(&file_path, unzip, threads)?;
             }
         } else {
             for attachment in content_attachments {
                 let file_path = out_path.join(&valid_filename(&attachment.filename));
-                attachment.download(&file_path, unzip, overwrite, threads)?;
+                attachment.download(&file_path, unzip, threads)?;
             }
         }
         Ok(())
