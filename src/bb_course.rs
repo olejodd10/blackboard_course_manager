@@ -1,14 +1,11 @@
 use std::path::{PathBuf, Path};
 
-mod input_utils;
-pub mod filename_utils;
 pub mod bb_content;
 pub mod bb_announcement;
-pub mod predicate_utils;
 use super::BBCourseManager;
 use bb_content::BBContent;
 use bb_announcement::BBAnnouncement;
-use input_utils::stdin_trimmed_line;
+use crate::utils::input_utils::stdin_trimmed_line;
 
 pub struct BBCourse<'a> {
     manager: &'a BBCourseManager,

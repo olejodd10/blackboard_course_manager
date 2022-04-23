@@ -7,7 +7,7 @@ use structopt::StructOpt;
 //OBS!! Merk at std::error::Error er en trait, mens std::io::Error er en struct!!
 use blackboard_course_manager::BBCourseManager;
 use blackboard_course_manager::bb_course::BBCourse;
-use blackboard_course_manager::bb_course::bb_content::time_utils;
+use blackboard_course_manager::utils::time_utils::now;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Blackboard Course Manager", about = "A tool for managing Blackboard courses")]
@@ -109,7 +109,7 @@ fn main() {
             if let Some(course) = courses.get_mut(&course_alias) {
                 if let Ok(download_size) = course.download_course_content_tree(overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
-                    course.last_tree_download = time_utils::now();
+                    course.last_tree_download = now();
                 } 
             } else {
                 eprintln!("Course with alias {} not found.", course_alias);
@@ -123,7 +123,7 @@ fn main() {
                 println!("Downloading tree for {}.", alias);
                 if let Ok(download_size) = course.download_course_content_tree(overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
-                    course.last_tree_download = time_utils::now();
+                    course.last_tree_download = now();
                 } 
             } 
         },

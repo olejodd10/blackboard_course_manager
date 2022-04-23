@@ -1,10 +1,11 @@
 pub mod bb_attachment;
-pub mod time_utils;
 
 use std::path::Path;
 use std::io::Write;
 use std::thread::JoinHandle;
-use super::{BBCourse, filename_utils::valid_filename, filename_utils::valid_dir_name};
+use super::BBCourse;
+use crate::utils::filename_utils::{valid_filename, valid_dir_name};
+use crate::utils::time_utils::is_more_recent;
 use bb_attachment::BBAttachment;
 
 // https://docs.blackboard.com/learn/rest/advanced/contenthandler-datatypes
@@ -139,7 +140,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
     ) -> Result<(), Box<dyn std::error::Error>> {
         match &self.content_handler {
             handler if ATTACHABLE_CONTENT_HANDLERS.contains(handler) => {
-                let maybe_updated = time_utils::is_more_recent(&self.modified, &self.course.last_tree_download);
+                let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
                 if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
                     let attachments_path = out_path.join(&valid_dir_name(&self.title));
                     std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
@@ -166,7 +167,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
                 Ok(())
             },
             handler => {
-                let maybe_updated = time_utils::is_more_recent(&self.modified, &self.course.last_tree_download);
+                let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
                 if !self.links.is_empty() && (overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap()) {
                     eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, handler);
                     let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&self.title)));

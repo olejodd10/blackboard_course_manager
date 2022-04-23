@@ -3,10 +3,11 @@ use std::io::{Read, Write};
 
 pub mod bb_course;
 pub mod cookie_session;
+pub mod utils;
 
 use cookie_session::CookieSession;
 use bb_course::BBCourse;
-use bb_course::filename_utils::cookie_filename;
+use crate::utils::filename_utils::cookie_filename;
 
 // Remove this unnecessary struct. Or rename.
 pub struct BBCourseManager {
