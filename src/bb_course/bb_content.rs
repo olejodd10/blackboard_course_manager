@@ -156,6 +156,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
                 }
             },
             BBContentHandler::XBBFolder => {
+                // "modified" for folders don't reflect their content, so no need in checking it.
                 let children_path = out_path.join(&valid_dir_name(&self.title));
                 std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
                 match self.get_children() {
@@ -172,8 +173,9 @@ impl<'a, 'b> BBContent<'a, 'b> {
                 Ok(())
             },
             handler => {
-                eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, handler);
-                if !self.links.is_empty() {
+                let maybe_updated = time_utils::is_more_recent(&self.modified, &self.course.last_tree_download);
+                if !self.links.is_empty() && (overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap()) {
+                    eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, handler);
                     let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&self.title)));
                     self.create_links_file(&links_file_path)?;
                     Ok(())
