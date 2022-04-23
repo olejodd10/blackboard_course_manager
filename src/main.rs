@@ -32,13 +32,6 @@ enum Bbcm {
             help="Force download of non-updated content",
         )]
         overwrite: bool,
-
-        #[structopt(
-            short,
-            long,
-            help="Unzip zip files after download",
-        )]
-        unzip: bool,
     },
 
     #[structopt(about="Download course file trees for all registered courses")]
@@ -49,13 +42,6 @@ enum Bbcm {
             help="Force download of non-updated content",
         )]
         overwrite: bool,
-
-        #[structopt(
-            short,
-            long,
-            help="Unzip zip files after download",
-        )]
-        unzip: bool,
     },
 
     #[structopt(about="View course announcements")]
@@ -119,10 +105,9 @@ fn main() {
         Bbcm::Tree {
             course_alias,
             overwrite,
-            unzip,
         } => {
             if let Some(course) = courses.get_mut(&course_alias) {
-                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite, unzip) {
+                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
                     course.last_tree_download = time_utils::now();
                 } 
@@ -133,11 +118,10 @@ fn main() {
 
         Bbcm::Trees {
             overwrite,
-            unzip,
         } => {
             for (alias, course) in &mut courses {
                 println!("Downloading tree for {}.", alias);
-                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite, unzip) {
+                if let Ok(download_size) = course.download_course_content_tree(None, None, overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
                     course.last_tree_download = time_utils::now();
                 } 
