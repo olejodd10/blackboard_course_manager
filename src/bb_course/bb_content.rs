@@ -1,4 +1,5 @@
 pub mod bb_attachment;
+pub mod bb_content_classes;
 
 use std::path::Path;
 use std::io::Write;
@@ -8,76 +9,12 @@ use crate::utils::filename_utils::{valid_filename, valid_dir_name};
 use crate::utils::time_utils::is_more_recent;
 use bb_attachment::BBAttachment;
 
-// https://docs.blackboard.com/learn/rest/advanced/contenthandler-datatypes
-#[derive(Debug, PartialEq)]
-pub enum BBContentHandler {
-    BBPanoptoBCMashup, // BBPanoptoBCMashup has a body attribute with an iframe. The same media can be found by following the attached link.  
-    Null,
-    XBBASMTTestLink,
-    XBBAssignment,
-    XBBBlankpage,
-    XBBBLTILink,
-    XBBCourselink,
-    XBBDocument,
-    XBBExternallink,
-    XBBFile,
-    XBBFolder,
-    XBBForumlink, 
-    XBBToollink,
-    Undefined,
-}
-
-pub const ATTACHABLE_CONTENT_HANDLERS: [BBContentHandler; 3] = [
-    BBContentHandler::XBBAssignment,
-    BBContentHandler::XBBDocument,
-    BBContentHandler::XBBFile,
-];
-
-pub const VIEWABLE_CONTENT_HANDLERS: [BBContentHandler; 13] = [
-    BBContentHandler::BBPanoptoBCMashup,
-    BBContentHandler::Null,
-    BBContentHandler::XBBASMTTestLink,
-    BBContentHandler::XBBAssignment,
-    BBContentHandler::XBBBlankpage,
-    BBContentHandler::XBBBLTILink,
-    BBContentHandler::XBBCourselink,
-    BBContentHandler::XBBDocument,
-    BBContentHandler::XBBExternallink,
-    BBContentHandler::XBBFile,
-    BBContentHandler::XBBForumlink, 
-    BBContentHandler::XBBToollink, 
-    BBContentHandler::Undefined,
-];
-
-
-impl BBContentHandler {
-    pub fn new(content_handler: &str) -> BBContentHandler {
-        match content_handler {
-            "resource/bb-panopto-bc-mashup" => BBContentHandler::BBPanoptoBCMashup,
-            "null" => BBContentHandler::Null,
-            "resource/x-bb-asmt-test-link" => BBContentHandler::XBBASMTTestLink,
-            "resource/x-bb-assignment" => BBContentHandler::XBBAssignment,
-            "resource/x-bb-blankpage" => BBContentHandler::XBBBlankpage,
-            "resource/x-bb-document" => BBContentHandler::XBBDocument,
-            "resource/x-bb-externallink" => BBContentHandler::XBBExternallink,
-            "resource/x-bb-file" => BBContentHandler::XBBFile,
-            "resource/x-bb-folder" => BBContentHandler::XBBFolder,
-            "resource/x-bb-forumlink" => BBContentHandler::XBBForumlink,
-            "resource/x-bb-toollink" => BBContentHandler::XBBToollink,
-            _ => {
-                eprintln!("Note: Undefined BlackBoard content handler \"{}\".", content_handler);
-                BBContentHandler::Undefined
-            },
-        }
-    }
-}
-
 pub struct BBContent<'a, 'b> {
     pub course: &'a BBCourse<'b>,
     pub id: String,
     pub title: String,
     pub modified: String,
-    pub content_handler: BBContentHandler,
+    pub content_handler: String,
     pub links: Vec<String>, 
 }
 
@@ -94,7 +31,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
                 id: m1["id"].to_string(),
                 title: m1["title"].to_string(),
                 modified: m1["modified"].to_string(),
-                content_handler: BBContentHandler::new(&m1["contentHandler"]["id"].to_string()),
+                content_handler: m1["contentHandler"]["id"].to_string(),
                 links: m1["links"].members().map(|m2| m2["href"].to_string()).collect(),
             }
         }).collect())
@@ -138,45 +75,41 @@ impl<'a, 'b> BBContent<'a, 'b> {
         overwrite: bool,
         threads: &mut Vec<JoinHandle<f64>>
     ) -> Result<(), Box<dyn std::error::Error>> {
-        match &self.content_handler {
-            handler if ATTACHABLE_CONTENT_HANDLERS.contains(handler) => {
-                let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
-                if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
-                    let attachments_path = out_path.join(&valid_dir_name(&self.title));
-                    std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
-                    self.download_attachments(&attachments_path, threads)
-                } else {
-                    Ok(())
-                }
-            },
-            BBContentHandler::XBBFolder => {
-                // "modified" for folders don't reflect their content, so no need in checking it.
-                let children_path = out_path.join(&valid_dir_name(&self.title));
-                std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
-                match self.get_children() {
-                    Ok(children) => {
-                        for child in children {
-                            child.download_children(&children_path, overwrite, threads)?;
-                        }
-                    },
-                    Err(err) => {
-                        //TODO: Graceful handling only for HTTP 403
-                        eprintln!("Error downloading children for \"{}\": {}", self.title, err);
-                    }
-                }
+        if bb_content_classes::ATTACHABLE.contains(&self.content_handler.as_str()) {
+            let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
+            if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
+                let attachments_path = out_path.join(&valid_dir_name(&self.title));
+                std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
+                self.download_attachments(&attachments_path, threads)
+            } else {
                 Ok(())
-            },
-            handler => {
-                let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
-                if !self.links.is_empty() && (overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap()) {
-                    eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, handler);
-                    let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&self.title)));
-                    self.create_links_file(&links_file_path)?;
-                    Ok(())
-                } else {
-                    Ok(())
+            }
+        } else if self.content_handler == bb_content_classes::FOLDER {
+            // "modified" for folders don't reflect their content, so no need in checking it.
+            let children_path = out_path.join(&valid_dir_name(&self.title));
+            std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
+            match self.get_children() {
+                Ok(children) => {
+                    for child in children {
+                        child.download_children(&children_path, overwrite, threads)?;
+                    }
+                },
+                Err(err) => {
+                    //TODO: Graceful handling only for HTTP 403
+                    eprintln!("Error downloading children for \"{}\": {}", self.title, err);
                 }
-            },
+            }
+            Ok(())
+        } else {
+            let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
+            if !self.links.is_empty() && (overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap()) {
+                // eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, self.content_handler);
+                let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&self.title)));
+                self.create_links_file(&links_file_path)?;
+                Ok(())
+            } else {
+                Ok(())
+            }
         }
     }
     

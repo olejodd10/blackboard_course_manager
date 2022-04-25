@@ -144,7 +144,7 @@ impl<'a> BBCourse<'a> {
         if announcements.is_empty() {
             println!("No announcements found.")
         } else {
-            for announcement in self.get_course_announcements(limit, offset)? {
+            for announcement in announcements {
                 announcement.view_with_name(self.manager);
             }
         }
