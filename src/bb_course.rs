@@ -2,9 +2,11 @@ use std::path::{PathBuf, Path};
 
 pub mod bb_content;
 pub mod bb_announcement;
+pub mod bb_gradebook;
 use super::BBCourseManager;
 use bb_content::BBContent;
 use bb_announcement::BBAnnouncement;
+use bb_gradebook::BBGradebookColumn;
 use crate::utils::input_utils::stdin_trimmed_line;
 
 pub struct BBCourse<'a> {
@@ -104,6 +106,18 @@ impl<'a> BBCourse<'a> {
         self.manager.session.download_bytes(&url)
     }
 
+    fn download_course_gradebook_json(&self, query_parameters: &[&str]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let mut url = format!("https://{}/learn/api/public/v1/courses/{}/gradebook/columns",
+            self.manager.session.domain,
+            self.id);
+
+        if !query_parameters.is_empty() {
+            url.extend(format!("?{}", query_parameters.join("&")).chars());
+        }
+
+        self.manager.session.download_bytes(&url)
+    }
+
     fn get_course_root_content(&self) -> Result<Vec<BBContent>, Box<dyn std::error::Error>> {
         let json = self.download_course_root_contents_json()?;
         BBContent::vec_from_json_results(json, self)
@@ -151,11 +165,28 @@ impl<'a> BBCourse<'a> {
         Ok(())
     }
 
+    // Gradebook
+    fn get_course_gradebook(&self) -> Result<Vec<BBGradebookColumn>, Box<dyn std::error::Error>> {
+        let json = self.download_course_gradebook_json(&[])?;
+        BBGradebookColumn::vec_from_json_results(json)
+    }
+    
+    pub fn view_course_gradebook(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let gradebook_columns = self.get_course_gradebook()?;
+        if gradebook_columns.is_empty() {
+            println!("No gradebook columns found.")
+        } else {
+            for gradebook_column in gradebook_columns {
+                gradebook_column.view();
+            }
+        }
+        println!("");
+        Ok(())
+    }
+
     pub fn view(&self) {
         println!("{}: {} {}", self.alias, self.course_code, self.semester);
     }
-    
-    // pub fn download_course_assessment_questions_json(...)
 }
 
 // impl<'a> Drop for BBCourse<'a> {

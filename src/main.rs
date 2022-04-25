@@ -69,6 +69,9 @@ enum Bbcm {
         offset: Option<usize>,
     },
 
+    #[structopt(about="View gradebook columns for all registered registered courses")]
+    Gradebooks,
+
     #[structopt(about="Remove registered course")]
     Remove {
         #[structopt(
@@ -138,6 +141,13 @@ fn main() {
             } else {
                 eprintln!("Course with alias {} not found.", course_alias);
             }
+        },
+
+        Bbcm::Gradebooks => {
+            for (alias, course) in &courses {
+                println!("Viewing gradebook columns for {}.", alias);
+                course.view_course_gradebook().unwrap();
+            } 
         },
 
         Bbcm::Remove {
