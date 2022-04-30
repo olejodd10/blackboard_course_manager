@@ -1,3 +1,5 @@
+use crate::utils::time_utils::local_rfc2822;
+
 pub struct BBGradebookColumn {
     pub id: String,
     pub name: String,
@@ -21,6 +23,6 @@ impl BBGradebookColumn {
     }
 
     pub fn view(&self) {
-        println!("\"{}\": due {}", self.name, self.due);
+        println!("\"{}\": due {}", self.name, local_rfc2822(&self.due));
     }
 }

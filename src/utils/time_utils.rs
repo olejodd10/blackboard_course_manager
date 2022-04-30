@@ -1,14 +1,26 @@
 use chrono::prelude::*;
+use std::cmp::Ordering::{self, *};
 // WARNING: This function assumes times on format "2021-08-13T07:34:54.795Z"
-pub fn is_more_recent(utc1: &str, utc2: &str) -> Option<bool> {
-    if let Ok(datetime1) = utc1.parse::<DateTime<Utc>>() {
-        if let Ok(datetime2) = utc2.parse::<DateTime<Utc>>() {
-            return Some(datetime1.timestamp() > datetime2.timestamp())
+pub fn partial_cmp_dt(dt1: &str, dt2: &str) -> Option<Ordering> {
+    if let Ok(dt1) = dt1.parse::<DateTime<Utc>>() {
+        if let Ok(dt2) = dt2.parse::<DateTime<Utc>>() {
+            Some(dt1.timestamp().cmp(&dt2.timestamp()))
+        } else {
+            Some(Greater)
+        }
+    } else {
+        if let Ok(_) = dt2.parse::<DateTime<Utc>>() {
+            Some(Less)
+        } else {
+            None
         }
     }
-    None
 }
 
-pub fn now() -> String {
-    format!("{:?}", Utc::now())
+pub fn utc_now() -> String {
+    format!("{}", Utc::now())
+}
+
+pub fn local_rfc2822(dt: &str) -> String {
+    dt.parse::<DateTime<Local>>().map(|dt| dt.to_rfc2822()).unwrap_or(String::from("<null>"))
 }

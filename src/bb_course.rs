@@ -8,6 +8,7 @@ use bb_content::BBContent;
 use bb_announcement::BBAnnouncement;
 use bb_gradebook::BBGradebookColumn;
 use crate::utils::input_utils::stdin_trimmed_line;
+use crate::utils::time_utils::{partial_cmp_dt, utc_now};
 
 pub struct BBCourse<'a> {
     manager: &'a BBCourseManager,
@@ -171,8 +172,17 @@ impl<'a> BBCourse<'a> {
         BBGradebookColumn::vec_from_json_results(json)
     }
     
-    pub fn view_course_gradebook(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let gradebook_columns = self.get_course_gradebook()?;
+    pub fn view_course_gradebook(&self, past: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut gradebook_columns = self.get_course_gradebook()?;
+        if !past {
+            let now = utc_now();
+            gradebook_columns = gradebook_columns.into_iter().filter(|gbc| {
+                gbc.due == "null" || partial_cmp_dt(&gbc.due, &now).map(|o| o == std::cmp::Ordering::Greater).unwrap_or(true)
+            }).collect();
+        }
+        gradebook_columns.sort_by(|gbc1, gbc2| {
+            partial_cmp_dt(&gbc1.due, &gbc2.due).unwrap_or(std::cmp::Ordering::Equal)
+        });
         if gradebook_columns.is_empty() {
             println!("No gradebook columns found.")
         } else {

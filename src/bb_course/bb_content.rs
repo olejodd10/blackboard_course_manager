@@ -6,7 +6,7 @@ use std::io::Write;
 use std::thread::JoinHandle;
 use super::BBCourse;
 use crate::utils::filename_utils::{valid_filename, valid_dir_name};
-use crate::utils::time_utils::is_more_recent;
+use crate::utils::time_utils::partial_cmp_dt;
 use bb_attachment::BBAttachment;
 
 pub struct BBContent<'a, 'b> {
@@ -76,7 +76,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
         threads: &mut Vec<JoinHandle<f64>>
     ) -> Result<(), Box<dyn std::error::Error>> {
         if bb_content_classes::ATTACHABLE.contains(&self.content_handler.as_str()) {
-            let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
+            let maybe_updated = partial_cmp_dt(&self.modified, &self.course.last_tree_download).map(|o| o == std::cmp::Ordering::Greater);
             if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
                 let attachments_path = out_path.join(&valid_dir_name(&self.title));
                 std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
@@ -101,7 +101,7 @@ impl<'a, 'b> BBContent<'a, 'b> {
             }
             Ok(())
         } else {
-            let maybe_updated = is_more_recent(&self.modified, &self.course.last_tree_download);
+            let maybe_updated = partial_cmp_dt(&self.modified, &self.course.last_tree_download).map(|o| o == std::cmp::Ordering::Greater);
             if !self.links.is_empty() && (overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap()) {
                 // eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, self.content_handler);
                 let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&self.title)));

@@ -7,7 +7,7 @@ use structopt::StructOpt;
 //OBS!! Merk at std::error::Error er en trait, mens std::io::Error er en struct!!
 use blackboard_course_manager::BBCourseManager;
 use blackboard_course_manager::bb_course::BBCourse;
-use blackboard_course_manager::utils::time_utils::now;
+use blackboard_course_manager::utils::time_utils::utc_now;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Blackboard Course Manager", about = "A tool for managing Blackboard courses")]
@@ -69,8 +69,15 @@ enum Bbcm {
         offset: Option<usize>,
     },
 
-    #[structopt(about="View gradebook columns for all registered registered courses")]
-    Gradebooks,
+    #[structopt(about="View gradebook columns for all registered courses")]
+    Gradebooks {
+        #[structopt(
+            short,
+            long,
+            help="Show past deadlines",
+        )]
+        past: bool,
+    },
 
     #[structopt(about="Remove registered course")]
     Remove {
@@ -112,7 +119,7 @@ fn main() {
             if let Some(course) = courses.get_mut(&course_alias) {
                 if let Ok(download_size) = course.download_course_content_tree(overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
-                    course.last_tree_download = now();
+                    course.last_tree_download = utc_now();
                 } 
             } else {
                 eprintln!("Course with alias {} not found.", course_alias);
@@ -126,7 +133,7 @@ fn main() {
                 println!("Downloading tree for {}.", alias);
                 if let Ok(download_size) = course.download_course_content_tree(overwrite) {
                     println!("Downloaded a total of {:.1} MB.", download_size/1000000.0);
-                    course.last_tree_download = now();
+                    course.last_tree_download = utc_now();
                 } 
             } 
         },
@@ -143,10 +150,12 @@ fn main() {
             }
         },
 
-        Bbcm::Gradebooks => {
+        Bbcm::Gradebooks {
+            past,
+        } => {
             for (alias, course) in &courses {
                 println!("Viewing gradebook columns for {}.", alias);
-                course.view_course_gradebook().unwrap();
+                course.view_course_gradebook(past).unwrap();
             } 
         },
 
