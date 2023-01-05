@@ -15,18 +15,18 @@ impl Handler for Collector {
 }
 
 #[derive(Debug, Clone)]
-pub struct CookieSession {
+pub struct BBSession {
     pub domain: String,
     pub cookie_jar_path: PathBuf,
 }
 
-impl CookieSession {
-    pub fn new(domain: &str, cookie_jar_path: &Path) -> Result<CookieSession, Box<dyn std::error::Error>> {
+impl BBSession {
+    pub fn new(domain: &str, cookie_jar_path: &Path) -> Result<BBSession, Box<dyn std::error::Error>> {
         if !cookie_jar_path.exists() {
             println!("Please export cookies from domain \"{}\" to following path: \n{}\nPress enter when done.", domain, cookie_jar_path.to_str().unwrap());
             std::io::stdin().read_line(&mut String::new()).unwrap();
         }
-        let bb_session = CookieSession {
+        let bb_session = BBSession {
             domain: domain.to_string(),
             cookie_jar_path: cookie_jar_path.to_path_buf(),
         };
@@ -58,11 +58,22 @@ impl CookieSession {
     pub fn download_bytes(&self, url: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         download::download_bytes(url, Some(&self.cookie_jar_path))
     }
+
+    pub fn download_courses_json(&self, query_parameters: &[&str]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let mut url = format!("https://{}/learn/api/public/v3/courses",
+            self.domain);
+        
+        if !query_parameters.is_empty() {
+            url.extend(format!("?{}", query_parameters.join("&")).chars());
+        }
+
+        self.download_bytes(&url)
+    }
 }
 
 
-impl std::convert::From<&CookieSession> for json::JsonValue {
-    fn from(session: &CookieSession) -> json::JsonValue {
+impl std::convert::From<&BBSession> for json::JsonValue {
+    fn from(session: &BBSession) -> json::JsonValue {
         json::object!{
             domain: session.domain.clone(),
             cookie_jar_path: session.cookie_jar_path.as_os_str().to_str().unwrap(),
@@ -70,11 +81,11 @@ impl std::convert::From<&CookieSession> for json::JsonValue {
     }
 }
 
-impl std::convert::From<json::JsonValue> for CookieSession {
-    fn from(course: json::JsonValue) -> CookieSession {
-        CookieSession::new(
+impl std::convert::From<json::JsonValue> for BBSession {
+    fn from(course: json::JsonValue) -> BBSession {
+        BBSession::new(
             &course["domain"].to_string(), 
             Path::new(&course["cookie_jar_path"].to_string())
-        ).expect("Error creating new CookieSession from JSON")
+        ).expect("Error creating new BBSession from JSON")
     }
 }

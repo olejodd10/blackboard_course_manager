@@ -1,17 +1,18 @@
 use super::BBContent;
+use crate::bb_session::BBSession;
 use std::path::Path;
 use std::io::Cursor;
 use std::thread::JoinHandle;
 
-pub struct BBAttachment<'a, 'b, 'c> {
-    pub content: &'a BBContent<'b, 'c>,
+pub struct BBAttachment<'a, 'b> {
+    pub content: &'a BBContent<'b>,
     pub id: String,
     pub filename: String,
     pub mimetype: String,
 }
 
-impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
-    pub fn vec_from_json_results(json: Vec<u8>, content: &'a BBContent<'b, 'c>) -> Result<Vec<BBAttachment<'a, 'b, 'c>>, Box<dyn std::error::Error>> {
+impl<'a, 'b> BBAttachment<'a, 'b> {
+    pub fn vec_from_json_results(json: Vec<u8>, content: &'a BBContent<'b>) -> Result<Vec<BBAttachment<'a, 'b>>, Box<dyn std::error::Error>> {
         let json_string = std::string::String::from_utf8(json)?;
         let parsed_json = json::parse(&json_string)?;
 
@@ -25,16 +26,15 @@ impl<'a, 'b, 'c> BBAttachment<'a, 'b, 'c> {
         }).collect())
     }
 
-    
-    pub fn download(&self, out_path: &Path, threads: &mut Vec<JoinHandle<f64>>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn download(&self, session: &BBSession, out_path: &Path, threads: &mut Vec<JoinHandle<f64>>) -> Result<(), Box<dyn std::error::Error>> {
         
         let url = format!("https://{}/learn/api/public/v1/courses/{}/contents/{}/attachments/{}/download",
-        self.content.course.manager.session.domain,
+        session.domain,
         self.content.course.id,
         self.content.id,
         self.id);
         
-        let session = self.content.course.manager.session.clone();
+        let session = session.clone(); // Session is quite cheap to clone. session: Arc<BBSession> might be slightly faster. Maybe even Rc<BBSession> works, since it's never sent?
         let out_path = std::path::PathBuf::from(out_path);
         let is_zip = self.mimetype == "application/zip";
         threads.push(std::thread::spawn(move || {

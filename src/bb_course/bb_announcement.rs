@@ -1,7 +1,7 @@
 mod bb_user;
 
 use bb_user::BBUser;
-use crate::BBCourseManager;
+use crate::bb_session::BBSession;
 
 pub struct BBAnnouncement {
     pub id: String,
@@ -43,11 +43,11 @@ impl BBAnnouncement {
         );
     }
 
-    pub fn view_with_name(&self, manager: &BBCourseManager) {
+    pub fn view_with_name(&self, session: &BBSession) {
         println!("{}\nTITLE: {}\nCREATOR: {}\nCREATED: {}\nMODIFIED: {}\n{}\n{}\n",
             "*".repeat(BBAnnouncement::VIEW_WIDTH),
             self.title,
-            BBUser::name_by_id(manager, &self.creator).expect("Failed to get announcement creator name"),
+            BBUser::name_by_id(session, &self.creator).expect("Failed to get announcement creator name"),
             self.created,
             self.modified,
             "-".repeat(BBAnnouncement::VIEW_WIDTH),
