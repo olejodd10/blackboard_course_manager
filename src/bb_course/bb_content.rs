@@ -104,14 +104,11 @@ impl<'a> BBContent<'a> {
             Ok(())
         } else {
             let maybe_updated = partial_cmp_dt(&self.modified, &self.course.last_tree_download).map(|o| o == std::cmp::Ordering::Greater);
-            if !self.links.is_empty() && (overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap()) {
+            if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
                 // eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, self.content_handler);
-                let links_file_path = out_path.join(&format!("{}_links.txt", &valid_filename(&self.title)));
-                self.create_links_file(&session.domain, &links_file_path)?;
-                Ok(())
-            } else {
-                Ok(())
+                self.create_url_files(&session.domain, &out_path)?;
             }
+            Ok(())
         }
     }
     
@@ -130,12 +127,15 @@ impl<'a> BBContent<'a> {
         Ok(())
     }
 
-    fn create_links_file(&self, domain: &str, out_path: &Path) -> Result<f64, Box<dyn std::error::Error>> {
-        let mut links_file = std::fs::File::create(out_path).expect("Error creating links file");
+    fn create_url_files(&self, domain: &str, out_dir: &Path) -> Result<f64, Box<dyn std::error::Error>> {
+        let mut sum = 0.0;
         for link in &self.links {
-            writeln!(links_file, "https://{}{}", domain, link).unwrap();
+            let out_path = out_dir.join(format!("{}.url", valid_filename(&self.title)));
+            let mut url_file = std::fs::File::create(out_path).expect("Error creating URL file");
+            write!(url_file, "[InternetShortcut]\nURL=https://{}{}", domain, link).unwrap();
+            sum += url_file.metadata()?.len() as f64;
         }
-        Ok(links_file.metadata()?.len() as f64)
+        Ok(sum)
     }
 
     pub fn view(&self) {
