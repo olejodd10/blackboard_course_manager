@@ -8,12 +8,10 @@ pub fn partial_cmp_dt(dt1: &str, dt2: &str) -> Option<Ordering> {
         } else {
             Some(Greater)
         }
+    } else if dt2.parse::<DateTime<Utc>>().is_ok() {
+        Some(Less)
     } else {
-        if let Ok(_) = dt2.parse::<DateTime<Utc>>() {
-            Some(Less)
-        } else {
-            None
-        }
+        None
     }
 }
 
@@ -22,5 +20,5 @@ pub fn utc_now() -> String {
 }
 
 pub fn local_rfc2822(dt: &str) -> String {
-    dt.parse::<DateTime<Local>>().map(|dt| dt.to_rfc2822()).unwrap_or(String::from("<null>"))
+    dt.parse::<DateTime<Local>>().map(|dt| dt.to_rfc2822()).unwrap_or_else(|_| String::from("<null>"))
 }

@@ -22,7 +22,7 @@ use bbcm::Bbcm;
 pub fn load_courses(json_path: &Path) -> Vec<BBCourse> {
     let mut json_string = String::new();
     if json_path.exists() {
-        let mut courses_file = std::fs::File::open(&json_path).expect("Error opening courses json");
+        let mut courses_file = std::fs::File::open(json_path).expect("Error opening courses json");
         courses_file.read_to_string(&mut json_string).expect("Error reading courses file");
     } else {
         json_string = String::from("[]");
@@ -51,7 +51,7 @@ pub fn save_courses(courses: &[BBCourse], out_path: &Path) {
     let json_array = json::JsonValue::Array(course_objects); 
     let json_dump = json_array.pretty(4);
     if out_path.exists() {
-        std::fs::remove_file(&out_path).expect("Error removing existing courses file");
+        std::fs::remove_file(out_path).expect("Error removing existing courses file");
     }
     let mut courses_file = std::fs::File::create(out_path).expect("Error creating courses file path");
     courses_file.write_all(json_dump.as_bytes()).expect("Error writing to courses file");
@@ -64,12 +64,12 @@ fn main() {
         std::env::set_var("BBCM_DOMAIN", &value);
         value
     });
-    let out_dir = std::env::var("BBCM_OUT_DIR").map(|s| PathBuf::from(s)).unwrap_or_else(|_| {
+    let out_dir = PathBuf::from(std::env::var("BBCM_OUT_DIR").unwrap_or_else(|_| {
         println!("Please enter the desired output directory (format: /path/to/directory):"); // This matches the NTNU courseId convention
         let value = stdin_trimmed_line();
         std::env::set_var("BBCM_OUT_DIR", &value);
-        PathBuf::from(value)
-    });
+        value
+    }));
     let work_dir = std::env::var("BBCM_WORK_DIR").map(|val| PathBuf::from(&val)).unwrap_or_else(|_| std::env::temp_dir().join("bbcm_work"));
     std::fs::create_dir_all(&out_dir).expect("Error creating BBCourseManager out_dir");
     std::fs::create_dir_all(&work_dir).expect("Error creating BBCourseManager work_dir");

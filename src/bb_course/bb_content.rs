@@ -80,7 +80,7 @@ impl<'a> BBContent<'a> {
         if bb_content_classes::ATTACHABLE.contains(&self.content_handler.as_str()) {
             let maybe_updated = partial_cmp_dt(&self.modified, &self.course.last_tree_download).map(|o| o == std::cmp::Ordering::Greater);
             if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
-                let attachments_path = out_path.join(&valid_dir_name(&self.title));
+                let attachments_path = out_path.join(valid_dir_name(&self.title));
                 std::fs::create_dir_all(&attachments_path).expect("Error creating attachment files dir"); 
                 self.download_attachments(session, &attachments_path, threads)
             } else {
@@ -88,7 +88,7 @@ impl<'a> BBContent<'a> {
             }
         } else if self.content_handler == bb_content_classes::FOLDER {
             // "modified" for folders don't reflect their content, so no need in checking it.
-            let children_path = out_path.join(&valid_dir_name(&self.title));
+            let children_path = out_path.join(valid_dir_name(&self.title));
             std::fs::create_dir_all(&children_path).expect("Error creating children dir"); 
             match self.get_children(session) {
                 Ok(children) => {
@@ -106,7 +106,7 @@ impl<'a> BBContent<'a> {
             let maybe_updated = partial_cmp_dt(&self.modified, &self.course.last_tree_download).map(|o| o == std::cmp::Ordering::Greater);
             if overwrite || maybe_updated.is_none() || maybe_updated.is_some() && maybe_updated.unwrap() {
                 // eprintln!("No branching action defined for {} with content handler {:?}; saving links file instead", self.title, self.content_handler);
-                self.create_url_files(&session.domain, &out_path)?;
+                self.create_url_files(&session.domain, out_path)?;
             }
             Ok(())
         }
@@ -121,7 +121,7 @@ impl<'a> BBContent<'a> {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let content_attachments = self.get_attachments(session)?;
         for attachment in content_attachments {
-            let file_path = out_path.join(&valid_filename(&attachment.filename));
+            let file_path = out_path.join(valid_filename(&attachment.filename));
             attachment.download(session, &file_path, threads)?;
         }
         Ok(())

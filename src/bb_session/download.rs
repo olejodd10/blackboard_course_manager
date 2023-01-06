@@ -14,7 +14,7 @@ pub fn download_file(file_url: &str, out_path: &Path, cookie_file_path: Option<&
         }
     } 
     
-    let mut out_file = std::fs::File::create(&out_path).expect("Error creating out file");
+    let mut out_file = std::fs::File::create(out_path).expect("Error creating out file");
 
     let mut easy = Easy::new();
     easy.url(file_url)?;

@@ -28,7 +28,7 @@ impl BBCourse {
         id: &str,
         last_tree_download: &str
     ) -> BBCourse {
-        std::fs::create_dir_all(&out_dir).expect("Error creating base folder"); // This is a bit ugly. An init function would be better.
+        std::fs::create_dir_all(out_dir).expect("Error creating base folder"); // This is a bit ugly. An init function would be better.
         BBCourse {
             course_code: course_code.to_string(),
             semester: semester.to_string(),
@@ -173,9 +173,9 @@ impl BBCourse {
         let mut gradebook_columns = self.get_course_gradebook(session)?;
         if !past {
             let now = utc_now();
-            gradebook_columns = gradebook_columns.into_iter().filter(|gbc| {
+            gradebook_columns.retain(|gbc| {
                 gbc.due == "null" || partial_cmp_dt(&gbc.due, &now).map(|o| o == std::cmp::Ordering::Greater).unwrap_or(true)
-            }).collect();
+            });
         }
         gradebook_columns.sort_by(|gbc1, gbc2| {
             partial_cmp_dt(&gbc1.due, &gbc2.due).unwrap_or(std::cmp::Ordering::Equal)
@@ -187,7 +187,7 @@ impl BBCourse {
                 gradebook_column.view();
             }
         }
-        println!("");
+        println!();
         Ok(())
     }
 
